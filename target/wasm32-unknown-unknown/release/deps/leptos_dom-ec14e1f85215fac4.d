@@ -1,0 +1,10 @@
+/home/anvlkv/projects/ya-tut-ya/ya-ya/target/wasm32-unknown-unknown/release/deps/libleptos_dom-ec14e1f85215fac4.rmeta: /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/leptos_dom-0.7.0-rc1/src/lib.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/leptos_dom-0.7.0-rc1/src/helpers.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/leptos_dom-0.7.0-rc1/src/macro_helpers/mod.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/leptos_dom-0.7.0-rc1/src/logging.rs
+
+/home/anvlkv/projects/ya-tut-ya/ya-ya/target/wasm32-unknown-unknown/release/deps/libleptos_dom-ec14e1f85215fac4.rlib: /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/leptos_dom-0.7.0-rc1/src/lib.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/leptos_dom-0.7.0-rc1/src/helpers.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/leptos_dom-0.7.0-rc1/src/macro_helpers/mod.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/leptos_dom-0.7.0-rc1/src/logging.rs
+
+/home/anvlkv/projects/ya-tut-ya/ya-ya/target/wasm32-unknown-unknown/release/deps/leptos_dom-ec14e1f85215fac4.d: /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/leptos_dom-0.7.0-rc1/src/lib.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/leptos_dom-0.7.0-rc1/src/helpers.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/leptos_dom-0.7.0-rc1/src/macro_helpers/mod.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/leptos_dom-0.7.0-rc1/src/logging.rs
+
+/home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/leptos_dom-0.7.0-rc1/src/lib.rs:
+/home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/leptos_dom-0.7.0-rc1/src/helpers.rs:
+/home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/leptos_dom-0.7.0-rc1/src/macro_helpers/mod.rs:
+/home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/leptos_dom-0.7.0-rc1/src/logging.rs:

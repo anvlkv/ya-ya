@@ -1,0 +1,11 @@
+/home/anvlkv/projects/ya-tut-ya/ya-ya/target/debug/deps/libmanyhow-387bd7c508296b5c.rmeta: /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/manyhow-0.10.4/src/lib.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/manyhow-0.10.4/src/span_ranged.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/manyhow-0.10.4/src/macro_rules.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/manyhow-0.10.4/src/error.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/manyhow-0.10.4/src/parse_to_tokens.rs
+
+/home/anvlkv/projects/ya-tut-ya/ya-ya/target/debug/deps/libmanyhow-387bd7c508296b5c.rlib: /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/manyhow-0.10.4/src/lib.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/manyhow-0.10.4/src/span_ranged.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/manyhow-0.10.4/src/macro_rules.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/manyhow-0.10.4/src/error.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/manyhow-0.10.4/src/parse_to_tokens.rs
+
+/home/anvlkv/projects/ya-tut-ya/ya-ya/target/debug/deps/manyhow-387bd7c508296b5c.d: /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/manyhow-0.10.4/src/lib.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/manyhow-0.10.4/src/span_ranged.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/manyhow-0.10.4/src/macro_rules.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/manyhow-0.10.4/src/error.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/manyhow-0.10.4/src/parse_to_tokens.rs
+
+/home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/manyhow-0.10.4/src/lib.rs:
+/home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/manyhow-0.10.4/src/span_ranged.rs:
+/home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/manyhow-0.10.4/src/macro_rules.rs:
+/home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/manyhow-0.10.4/src/error.rs:
+/home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/manyhow-0.10.4/src/parse_to_tokens.rs:

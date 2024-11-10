@@ -1,0 +1,21 @@
+{
+  "private": true,
+  "name": "ya-ya",
+  "description": "An Extension.js example.",
+  "version": "0.0.1",
+  "type": "module",
+  "author": {
+    "name": "Your Name",
+    "email": "your@email.com",
+    "url": "https://yourwebsite.com"
+  },
+  "scripts": {
+    "dev": "extension dev",
+    "start": "extension start",
+    "build": "extension build"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "extension": "latest"
+  }
+}

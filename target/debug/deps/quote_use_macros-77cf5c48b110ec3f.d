@@ -1,0 +1,10 @@
+/home/anvlkv/projects/ya-tut-ya/ya-ya/target/debug/deps/libquote_use_macros-77cf5c48b110ec3f.so: /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/quote-use-macros-0.8.4/src/lib.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/quote-use-macros-0.8.4/src/prelude.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/quote-use-macros-0.8.4/src/use_parser.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/quote-use-macros-0.8.4/src/prelude/core.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/quote-use-macros-0.8.4/src/prelude/std.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/quote-use-macros-0.8.4/src/prelude/2021.rs
+
+/home/anvlkv/projects/ya-tut-ya/ya-ya/target/debug/deps/quote_use_macros-77cf5c48b110ec3f.d: /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/quote-use-macros-0.8.4/src/lib.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/quote-use-macros-0.8.4/src/prelude.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/quote-use-macros-0.8.4/src/use_parser.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/quote-use-macros-0.8.4/src/prelude/core.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/quote-use-macros-0.8.4/src/prelude/std.rs /home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/quote-use-macros-0.8.4/src/prelude/2021.rs
+
+/home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/quote-use-macros-0.8.4/src/lib.rs:
+/home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/quote-use-macros-0.8.4/src/prelude.rs:
+/home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/quote-use-macros-0.8.4/src/use_parser.rs:
+/home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/quote-use-macros-0.8.4/src/prelude/core.rs:
+/home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/quote-use-macros-0.8.4/src/prelude/std.rs:
+/home/anvlkv/.cargo/registry/src/index.crates.io-6f17d22bba15001f/quote-use-macros-0.8.4/src/prelude/2021.rs:
