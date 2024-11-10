@@ -8,22 +8,16 @@ use wasm_bindgen::JsValue;
 use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::{Element, Node};
 
-const BEFORE_TRIGGER_TIMER: i32 = 300;
+const BEFORE_TRIGGER_TIMER: i32 = 400;
 const TRIGGER_ANIMATED_TIMER: i32 = 800;
 const TRIGGER_ATTRIBUTE: &str = "data-ya-ya-trigger-word";
 const PENDING_ATTRIBUTE: &str = "data-ya-ya-pending-word";
 
 #[derive(Debug, Clone, PartialEq)]
-enum Phase {
-    None,
-    Pending,
-}
-
-#[derive(Debug, Clone, PartialEq)]
 struct Word {
     pub text: String,
-    pub start: u32,
-    pub end: u32,
+    pub start: usize,
+    pub end: usize,
     pub word_pos: usize,
     pub node: Node,
 }
@@ -41,55 +35,73 @@ impl Word {
     }
 
     fn carret_word(pos: &web_sys::CaretPosition) -> Option<Self> {
-        let node = pos.offset_node()?;
+        let mut node = pos.offset_node()?;
 
         if node
             .dyn_ref::<Element>()
             .ok_or_else(|| node.parent_element())
-            .map(|e| e.has_attribute(TRIGGER_ATTRIBUTE))
+            .map(|e| e.has_attribute(TRIGGER_ATTRIBUTE) || e.has_attribute(PENDING_ATTRIBUTE))
             .unwrap_or_default()
         {
             return None;
         }
 
+        match node.node_type() {
+            1 => {
+                if node.child_nodes().length() == 1 {
+                    node = node.last_child().unwrap();
+                } else {
+                    return None;
+                }
+            }
+            3 => {}
+            _ => return None,
+        }
+
         let text = node.text_content()?;
-        let char_at = pos.offset();
-        let mut char_caret: u32 = 0;
-        let mut words = text.as_str().unicode_words().enumerate();
-        while let Some((index, word)) = words.next() {
-            let word_start = char_caret;
-            let word_end = char_caret + word.graphemes(true).count() as u32;
-            if word_end >= char_at && word_start <= char_at {
+        let char_at = pos.offset() as usize;
+        let words_map = text.chars().enumerate().fold(
+            Vec::<(usize, usize, String)>::new(),
+            |mut acc, (at, ch)| {
+                if let Some(entry) = acc.last_mut().filter(|(_, _, w)| {
+                    if w.trim().len() == 0 {
+                        false
+                    } else {
+                        let test = format!("{w}{ch}");
+                        !ch.is_whitespace() && test.unicode_words().count() == 1
+                    }
+                }) {
+                    entry.1 += 1;
+                    entry.2.push(ch);
+                } else {
+                    acc.push((at, at + 1, String::from(ch)));
+                }
+                acc
+            },
+        );
+
+        for (word_pos, (start, end, text)) in words_map.into_iter().enumerate() {
+            if start <= char_at && end > char_at {
                 return Some(Word {
-                    start: word_start,
-                    end: word_end,
-                    word_pos: index,
-                    text: word.to_string(),
+                    text,
+                    start,
+                    end,
+                    word_pos,
                     node,
                 });
             }
-            char_caret = word_end + 1;
         }
+
         None
     }
 
-    fn animate_mount(&self) -> Result<(), JsValue> {
+    fn animate_mount(&mut self) -> Result<(), JsValue> {
         let text = self.node.text_content().unwrap();
 
-        let text_before = text
-            .graphemes(true)
-            .take(self.start as usize)
-            .collect::<String>();
-        let text_after = text
-            .graphemes(true)
-            .skip(self.end as usize)
-            .collect::<String>();
+        let text_before = text.chars().take(self.start).collect::<String>();
+        let text_after = text.chars().skip(self.end).collect::<String>();
 
         let wd = self.text.clone();
-
-        log::info!("text_before: {text_before}");
-        log::info!("wd: {wd}");
-        log::info!("text_after: {text_after}");
 
         let text_node_before = document().create_text_node(&text_before);
         let text_node_after = document().create_text_node(&text_after);
@@ -106,10 +118,12 @@ impl Word {
         replace_node.append_child(&text_node_after)?;
 
         if let Some(par) = self.node.parent_node() {
-            par.replace_child(&replace_node.into(), &self.node)?;
+            par.replace_child(&replace_node.clone().into(), &self.node)?;
         } else {
-            document().replace_child(&replace_node.into(), &self.node)?;
+            document().replace_child(&replace_node.clone().into(), &self.node)?;
         }
+
+        self.node = replace_node.into();
 
         Ok(())
     }
@@ -119,6 +133,9 @@ impl Word {
     }
 
     fn revert_animate(&self) -> Result<(), String> {
+        let text = self.node.text_content().unwrap();
+        let text_node = document().create_text_node(&text);
+
         Ok(())
     }
 
@@ -160,8 +177,7 @@ pub fn App() -> impl IntoView {
     });
 
     let on_trigger_word_animate = Callback::new({
-        move |word: Word| {
-            log::info!("timer: {}", word.text);
+        move |mut word: Word| {
             let win = web_sys::window().unwrap();
 
             let closure = {
@@ -180,6 +196,7 @@ pub fn App() -> impl IntoView {
                 .expect("set timer");
 
             word.animate_mount().unwrap();
+            log::debug!("on_trigger_word_animate");
             current_word_trigger.update(|running| {
                 if let Some((_, old_timer, _)) = running.take() {
                     win.clear_timeout_with_handle(old_timer);
@@ -226,6 +243,8 @@ pub fn App() -> impl IntoView {
                         BEFORE_TRIGGER_TIMER,
                     )
                     .expect("set timer");
+
+                log::debug!("mousemove new word");
                 current_word_trigger.update(|running| {
                     if let Some((_, old_timer, _)) = running.take() {
                         win.clear_timeout_with_handle(old_timer);
@@ -234,6 +253,7 @@ pub fn App() -> impl IntoView {
                 });
             }
         } else {
+            log::debug!("mousemove clear");
             current_word_trigger.update(|running| {
                 if let Some((_, old_timer, _)) = running.take() {
                     win.clear_timeout_with_handle(old_timer);
@@ -243,9 +263,9 @@ pub fn App() -> impl IntoView {
         }
     });
 
-    let clear_mouse_out_listener = use_event_listener(use_window(), ev::mouseleave, move |evt| {
+    let clear_mouse_out_listener = use_event_listener(use_window(), ev::mouseleave, move |_| {
         let win = web_sys::window().unwrap();
-
+        log::debug!("mouseleave");
         current_word_trigger.update(|running| {
             if let Some((_, old_timer, _)) = running.take() {
                 win.clear_timeout_with_handle(old_timer);
