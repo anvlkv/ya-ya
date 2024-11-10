@@ -1,1 +1,0 @@
-/home/anvlkv/projects/ya-tut-ya/ya-ya/target/wasm32-unknown-unknown/release/ya_ya_front.wasm: /home/anvlkv/projects/ya-tut-ya/ya-ya/wasm/front/src/app.rs /home/anvlkv/projects/ya-tut-ya/ya-ya/wasm/front/src/lib.rs
