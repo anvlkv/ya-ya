@@ -9,7 +9,7 @@ use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::{Element, Node};
 
 const BEFORE_TRIGGER_TIMER: i32 = 400;
-const TRIGGER_ANIMATED_TIMER: i32 = 800;
+const TRIGGER_ANIMATED_TIMER: i32 = 1200;
 const TRIGGER_ATTRIBUTE: &str = "data-ya-ya-trigger-word";
 const PENDING_ATTRIBUTE: &str = "data-ya-ya-pending-word";
 const BRAND_COLOR: [u8; 3] = [239, 207, 227];
