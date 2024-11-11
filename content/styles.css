@@ -7,3 +7,28 @@
     overflow: visible;
     z-index: 8000;
 }
+
+mark[data-ya-ya-pending-word] {
+    letter-spacing: 0.3rem;
+    background-color: var(--mark-background-color);
+    color: black;
+    animation-name: pending-animation;
+    animation-duration: var(--pending-animation-duration);
+    animation-iteration-count: 1;
+    animation-direction: normal;
+    border-radius: 0.3em;
+    padding-inline: 0.6rem;
+}
+
+@keyframes pending-animation {
+    from {
+        letter-spacing: 1px;
+        background-color: rgba(255, 255, 255, 0);
+        padding-inline: 0;
+    }
+    to {
+        letter-spacing: 0.3rem;
+        background-color: var(--mark-background-color);
+        padding-inline: 0.6rem;
+    }
+}

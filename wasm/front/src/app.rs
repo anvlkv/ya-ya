@@ -12,6 +12,7 @@ const BEFORE_TRIGGER_TIMER: i32 = 400;
 const TRIGGER_ANIMATED_TIMER: i32 = 800;
 const TRIGGER_ATTRIBUTE: &str = "data-ya-ya-trigger-word";
 const PENDING_ATTRIBUTE: &str = "data-ya-ya-pending-word";
+const BRAND_COLOR: [u8; 3] = [239, 207, 227];
 
 #[derive(Debug, Clone, PartialEq)]
 struct Word {
@@ -34,13 +35,25 @@ impl Word {
             .flatten()
     }
 
+    fn carret_animation(pos: &web_sys::CaretPosition) -> bool {
+        pos.offset_node()
+            .map(|node| {
+                node.dyn_ref::<Element>()
+                    .ok_or_else(|| node.parent_element())
+                    .map(|e| e.has_attribute(PENDING_ATTRIBUTE))
+                    .ok()
+            })
+            .flatten()
+            .unwrap_or_default()
+    }
+
     fn carret_word(pos: &web_sys::CaretPosition) -> Option<Self> {
         let mut node = pos.offset_node()?;
 
         if node
             .dyn_ref::<Element>()
             .ok_or_else(|| node.parent_element())
-            .map(|e| e.has_attribute(TRIGGER_ATTRIBUTE) || e.has_attribute(PENDING_ATTRIBUTE))
+            .map(|e| e.has_attribute(TRIGGER_ATTRIBUTE))
             .unwrap_or_default()
         {
             return None;
@@ -64,12 +77,12 @@ impl Word {
             Vec::<(usize, usize, String)>::new(),
             |mut acc, (at, ch)| {
                 if let Some(entry) = acc.last_mut().filter(|(_, _, w)| {
-                    if w.trim().len() == 0 {
-                        false
-                    } else {
-                        let test = format!("{w}{ch}");
-                        !ch.is_whitespace() && test.unicode_words().count() == 1
-                    }
+                    w.chars()
+                        .rev()
+                        .next()
+                        .map(|c| c.is_alphabetic())
+                        .unwrap_or_default()
+                        && ch.is_alphabetic()
                 }) {
                     entry.1 += 1;
                     entry.2.push(ch);
@@ -82,13 +95,17 @@ impl Word {
 
         for (word_pos, (start, end, text)) in words_map.into_iter().enumerate() {
             if start <= char_at && end > char_at {
-                return Some(Word {
-                    text,
-                    start,
-                    end,
-                    word_pos,
-                    node,
-                });
+                if text.chars().all(|c| c.is_alphabetic()) {
+                    return Some(Word {
+                        text,
+                        start,
+                        end,
+                        word_pos,
+                        node,
+                    });
+                } else {
+                    break;
+                }
             }
         }
 
@@ -108,11 +125,20 @@ impl Word {
         let wd_node = document().create_element("mark")?;
 
         wd_node.set_attribute(PENDING_ATTRIBUTE, "0")?;
+        wd_node.set_attribute(
+            "style",
+            format!("--pending-animation-duration: {TRIGGER_ANIMATED_TIMER}ms; --mark-background-color: rgba({r}, {g}, {b}, 1)",
+                r=BRAND_COLOR[0],
+                g=BRAND_COLOR[1],
+                b=BRAND_COLOR[2]
+            ).as_str(),
+        )?;
 
         wd_node.set_text_content(Some(&wd));
 
         let replace_node = document().create_element("span")?;
 
+        replace_node.set_attribute("style", "display: inline;")?;
         replace_node.append_child(&text_node_before)?;
         replace_node.append_child(&wd_node)?;
         replace_node.append_child(&text_node_after)?;
@@ -128,18 +154,51 @@ impl Word {
         Ok(())
     }
 
-    fn animate_tick(&self) -> Result<(), String> {
-        Ok(())
-    }
-
-    fn revert_animate(&self) -> Result<(), String> {
+    fn revert_animate(&mut self) -> Result<(), JsValue> {
         let text = self.node.text_content().unwrap();
         let text_node = document().create_text_node(&text);
 
+        if let Some(par) = self.node.parent_node() {
+            par.replace_child(&text_node.clone().into(), &self.node)?;
+        } else {
+            document().replace_child(&text_node.clone().into(), &self.node)?;
+        }
+
+        self.node = text_node.into();
+
         Ok(())
     }
 
-    fn mount_trigger(&self, key: u64) -> Result<(), String> {
+    fn mount_trigger(&self, key: u64) -> Result<(), JsValue> {
+        let wd_node = self
+            .node
+            .dyn_ref::<Element>()
+            .map(|e| {
+                e.query_selector(format!("mark[{PENDING_ATTRIBUTE}]").as_str())
+                    .ok()
+            })
+            .flatten()
+            .flatten()
+            .ok_or_else(|| JsValue::from_str("No mark element"))?;
+
+        let mnt_node = document().create_element("mark")?;
+
+        mnt_node.set_attribute(TRIGGER_ATTRIBUTE, key.to_string().as_str())?;
+        mnt_node.set_attribute(
+            "style",
+            format!(
+                "--mark-background-color: rgba({r}, {g}, {b}, 1)",
+                r = BRAND_COLOR[0],
+                g = BRAND_COLOR[1],
+                b = BRAND_COLOR[2]
+            )
+            .as_str(),
+        )?;
+
+        mnt_node.set_text_content(Some(&self.text));
+
+        self.node.replace_child(&mnt_node.into(), &wd_node.into())?;
+
         Ok(())
     }
 }
@@ -156,7 +215,7 @@ pub fn App() -> impl IntoView {
     let on_trigger_repeat = Callback::new(move |key: u64| {});
 
     let on_trigger_complete = Callback::new({
-        move |word: Word| {
+        move |mut word: Word| {
             log::info!("complete: {}", word.text);
             current_word_trigger.set(None);
 
@@ -169,6 +228,8 @@ pub fn App() -> impl IntoView {
                     on_trigger_repeat.call(key);
                 }) as Box<dyn FnMut()>)
             };
+
+            word.mount_trigger(key).unwrap();
 
             data.update(|d| {
                 _ = d.insert(key, (word, None, closure));
@@ -211,19 +272,21 @@ pub fn App() -> impl IntoView {
         let y = evt.client_y() as f32;
         let win = web_sys::window().unwrap();
         let doc = win.document().unwrap();
-
-        if let Some(key) = doc
-            .caret_position_from_point(x, y)
-            .map(|car| Word::carret_trigger(&car))
+        let pos = doc.caret_position_from_point(x, y);
+        if pos
+            .as_ref()
+            .map(|car| Word::carret_animation(car))
+            .unwrap_or_default()
+        {
+            return;
+        } else if let Some(key) = pos
+            .as_ref()
+            .map(|car| Word::carret_trigger(car))
             .flatten()
             .filter(|k| data.with(|d| d.contains_key(&k)))
         {
             show_ya.update(|d| _ = d.insert(key));
-        } else if let Some(word) = doc
-            .caret_position_from_point(x, y)
-            .map(|car| Word::carret_word(&car))
-            .flatten()
-        {
+        } else if let Some(word) = pos.as_ref().map(|car| Word::carret_word(car)).flatten() {
             if current_word_trigger.with(|t| {
                 t.as_ref()
                     .map(|(current_word, _, _)| current_word != &word)
@@ -246,8 +309,9 @@ pub fn App() -> impl IntoView {
 
                 log::debug!("mousemove new word");
                 current_word_trigger.update(|running| {
-                    if let Some((_, old_timer, _)) = running.take() {
+                    if let Some((mut old_word, old_timer, _)) = running.take() {
                         win.clear_timeout_with_handle(old_timer);
+                        _ = old_word.revert_animate();
                     }
                     *running = Some((word, timer, closure));
                 });
