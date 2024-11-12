@@ -3,6 +3,8 @@ name = "ya-ya-background"
 version = { workspace = true }
 edition = { workspace = true }
 resolver = "2"
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
 
 [lib]
 crate-type = ["cdylib"]

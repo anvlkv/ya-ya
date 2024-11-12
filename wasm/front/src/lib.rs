@@ -25,5 +25,5 @@ fn mount_app() {
 
     let ht_el = el.dyn_ref::<HtmlElement>().cloned().unwrap();
 
-    leptos::mount_to(ht_el, app::App);
+    mount_to(ht_el, app::App);
 }

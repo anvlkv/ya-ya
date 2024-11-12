@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["wasm/background", "wasm/front"]
+members = ["wasm/background", "wasm/front", "wasm/popup"]
 
 [workspace.package]
 version = "0.1.0"

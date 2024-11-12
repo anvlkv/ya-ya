@@ -1,3 +1,4 @@
+mod loading;
 mod word;
 mod ya_word;
 
@@ -7,7 +8,7 @@ use leptos::*;
 use leptos_use::{
     signal_debounced, use_event_listener, use_raf_fn, use_window, UseRafFnCallbackArgs,
 };
-use wasm_bindgen::{prelude::Closure, JsCast};
+use uuid::Uuid;
 use web_sys::CaretPosition;
 use word::{WordMark, WordPermanentTrigger};
 use ya_word::YaWordPopover;
@@ -23,9 +24,8 @@ pub const BRAND_COLOR: [u8; 3] = [239, 207, 227];
 pub fn App() -> impl IntoView {
     let extension_root = create_node_ref::<html::Div>();
 
-    let (data, set_data) =
-        create_signal(HashMap::<uuid::Uuid, RwSignal<WordPermanentTrigger>>::new());
-    let (show_ya, set_show_ya) = create_signal(BTreeSet::<uuid::Uuid>::new());
+    let (data, set_data) = create_signal(HashMap::<Uuid, RwSignal<WordPermanentTrigger>>::new());
+    let (show_ya, set_show_ya) = create_signal(BTreeSet::<Uuid>::new());
 
     let (word_mark, set_word_mark) = create_signal(Option::<WordMark>::None);
     let (caret, set_caret) = create_signal(Option::<CaretPosition>::None);
@@ -99,7 +99,7 @@ pub fn App() -> impl IntoView {
                 let ended = wd.tick_timer(delta);
                 if ended {
                     log::debug!("app.rs :: tick_timer ended, converting WordMark to permanent");
-                    let id = uuid::Uuid::new_v4();
+                    let id = Uuid::new_v4();
                     let permanent = wd.into_permanent(id).unwrap();
                     *set_word_mark = None;
                     set_data.update(|set_data| {
@@ -143,13 +143,19 @@ pub fn App() -> impl IntoView {
             .collect::<Vec<_>>()
     });
 
+    let close_cb = Callback::new(move |(id, quality): (Uuid, Option<bool>)| {
+        set_show_ya.update(|s| {
+            s.remove(&id);
+        });
+    });
+
     view! {
         <div node_ref=extension_root>
             <For each=move || visible_words.get()
                 key=|wd| wd.1
                 let:word
             >
-                <YaWordPopover word=word.0/>
+                <YaWordPopover word=word.0 close_cb/>
             </For>
         </div>
     }

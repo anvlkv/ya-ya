@@ -5,8 +5,9 @@ use super::{
 };
 
 use leptos::document;
+use uuid::Uuid;
 use wasm_bindgen::{JsCast, JsValue};
-use web_sys::{CaretPosition, Element, Node};
+use web_sys::{Element, Node};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct WordMark {
@@ -20,7 +21,7 @@ pub struct WordMark {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct WordPermanentTrigger {
-    pub id: uuid::Uuid,
+    pub id: Uuid,
     pub start: usize,
     pub end: usize,
     pub word_pos: usize,
@@ -200,11 +201,12 @@ impl WordMark {
         self.time >= TRIGGER_ANIMATED_TIMER as f64
     }
 
-    pub fn into_permanent(&self, id: uuid::Uuid) -> Result<WordPermanentTrigger, JsValue> {
+    pub fn into_permanent(&self, id: Uuid) -> Result<WordPermanentTrigger, JsValue> {
         let mark = self.mark.clone();
 
         mark.remove_attribute(PENDING_ATTRIBUTE)?;
         mark.set_attribute(TRIGGER_ATTRIBUTE, id.to_string().as_str())?;
+        mark.set_attribute("id", format!("mark-{id}").as_str())?;
 
         Ok(WordPermanentTrigger {
             mark,
@@ -219,7 +221,7 @@ impl WordMark {
 }
 
 impl WordPermanentTrigger {
-    pub fn id(node: Node) -> Option<uuid::Uuid> {
+    pub fn id(node: Node) -> Option<Uuid> {
         let text_node = text_node(node)?;
         let text = Some(text_node.text_content()?);
 
@@ -232,7 +234,7 @@ impl WordPermanentTrigger {
                 .flatten()
         }) {
             if let Some(id) = element.get_attribute(TRIGGER_ATTRIBUTE) {
-                return uuid::Uuid::from_str(&id).ok();
+                return Uuid::from_str(&id).ok();
             } else if text != element.text_content() {
                 break;
             } else if let Some(up) = element.parent_node() {

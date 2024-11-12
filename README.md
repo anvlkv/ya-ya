@@ -25,5 +25,5 @@ wasm-pack build wasm/background
 ### Development
 
 ```
-cargo watch -i "**/pkg/" -s "wasm-pack build wasm/front && wasm-pack build wasm/background && npm run dev"
+cargo watch -i "**/pkg/" -s "wasm-pack build wasm/front && wasm-pack build wasm/background && wasm-pack build wasm/popup && npm run dev"
 ```
