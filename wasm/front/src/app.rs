@@ -133,7 +133,7 @@ pub fn App() -> impl IntoView {
         clear_mouse_out_listener();
     });
 
-    let visible_words = Signal::derive(move || {
+    let visible_words = create_memo(move |_| {
         let data = data.get();
 
         show_ya

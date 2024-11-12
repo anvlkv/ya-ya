@@ -1,3 +1,5 @@
+@import url("https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css");
+
 #ya-ya-exetension-mount {
     position: absolute;
     top: 0;
@@ -22,14 +24,14 @@ mark[data-ya-ya-pending-word] {
     word-break: break-all;
 }
 mark[data-ya-ya-pending-word] {
-    animation-name: pending-animation;
+    animation-name: ya-ya-pending-animation;
     animation-duration: var(--pending-animation-duration);
     animation-iteration-count: 1;
     animation-direction: normal;
     opacity: 0.9;
 }
 
-@keyframes pending-animation {
+@keyframes ya-ya-pending-animation {
     from {
         letter-spacing: 1px;
         background-color: rgba(255, 255, 255, 0);
@@ -40,4 +42,16 @@ mark[data-ya-ya-pending-word] {
         background-color: var(--mark-background-color);
         padding-inline: 0.6rem;
     }
+}
+
+.ya-ya-popover {
+    position: absolute;
+    max-height: 100dvh;
+    max-width: 100dvw;
+    overflow: auto;
+    background-color: white;
+    color: black;
+    border-radius: 1rem;
+    padding: 1rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
