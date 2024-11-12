@@ -8,11 +8,13 @@
     z-index: 8000;
 }
 
-mark[data-ya-ya-trigger-word] {
-    background-color: unset;
-}
+/* mark[data-ya-ya-trigger-word] {
+    background-color: red;
+} */
+
 mark[data-ya-ya-trigger-word],
 mark[data-ya-ya-pending-word] {
+    background-color: var(--mark-background-color);
     letter-spacing: 0.3rem;
     color: black;
     border-radius: 0.3em;
@@ -20,11 +22,11 @@ mark[data-ya-ya-pending-word] {
     word-break: break-all;
 }
 mark[data-ya-ya-pending-word] {
-    background-color: var(--mark-background-color);
     animation-name: pending-animation;
     animation-duration: var(--pending-animation-duration);
     animation-iteration-count: 1;
     animation-direction: normal;
+    opacity: 0.9;
 }
 
 @keyframes pending-animation {

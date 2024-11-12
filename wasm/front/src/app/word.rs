@@ -1,228 +1,308 @@
-use super::{BRAND_COLOR, PENDING_ATTRIBUTE, TRIGGER_ANIMATED_TIMER, TRIGGER_ATTRIBUTE};
+use std::str::FromStr;
+
+use super::{
+    BRAND_COLOR, MARK_ROOT_ATTRIBUTE, PENDING_ATTRIBUTE, TRIGGER_ANIMATED_TIMER, TRIGGER_ATTRIBUTE,
+};
 
 use leptos::document;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{CaretPosition, Element, Node};
 
-#[derive(Debug, Clone)]
-pub struct Word {
-    pub text: String,
+#[derive(Debug, Clone, PartialEq)]
+pub struct WordMark {
     pub start: usize,
     pub end: usize,
     pub word_pos: usize,
-    pub node: Node,
+    pub root: Element,
+    pub mark: Element,
+    pub time: f64,
 }
 
-impl PartialEq for Word {
-    fn eq(&self, other: &Word) -> bool {
-        self.node == other.node && self.start == other.start && self.end == other.end
-    }
+#[derive(Debug, Clone, PartialEq)]
+pub struct WordPermanentTrigger {
+    pub id: uuid::Uuid,
+    pub start: usize,
+    pub end: usize,
+    pub word_pos: usize,
+    pub root: Element,
+    pub mark: Element,
+    pub annotation: Option<String>,
 }
 
-impl Word {
-    pub fn carret_trigger(pos: &CaretPosition) -> Option<u64> {
-        let mut current_node = pos.offset_node().and_then(Word::text_node)?;
-
-        while let Some(element) = current_node.dyn_ref::<Element>() {
-            if let Some(attr) = element.get_attribute(TRIGGER_ATTRIBUTE) {
-                return attr.parse().ok();
-            }
-            current_node = element.parent_node()?;
+impl WordMark {
+    pub fn is_same(&self, node: Node, pos: u32) -> bool {
+        if !self.root.contains(Some(&node)) {
+            log::debug!("word.rs :: node is not contained in root");
+            return false;
         }
 
-        None
-    }
+        let text_node = if let Some(tn) = text_node(node.clone()) {
+            tn
+        } else {
+            log::debug!("word.rs :: Failed to get text node");
+            return false;
+        };
 
-    pub fn carret_animation(pos: &CaretPosition) -> bool {
-        pos.offset_node()
-            .and_then(Word::text_node)
-            .map(|node| {
-                let mut current_node = node;
-                while let Some(element) = current_node.dyn_ref::<Element>() {
-                    if element.has_attribute(PENDING_ATTRIBUTE) {
-                        return true;
-                    }
-                    if let Some(up) = element.parent_node() {
-                        current_node = up
-                    } else {
-                        break;
-                    }
-                }
-                false
-            })
-            .unwrap_or_default()
-    }
+        log::debug!("word.rs :: Fetching text content from the node");
+        let text = if let Some(text) = node.text_content() {
+            text
+        } else {
+            log::debug!("word.rs :: Failed to get text content");
+            return false;
+        };
 
-    fn text_node(node: Node) -> Option<Node> {
-        match node.node_type() {
-            1 => {
-                let text = node.text_content()?;
-                let children = node.child_nodes();
+        let char_at = pos as usize;
 
-                for n in 0..children.length() {
-                    let nth = children.get(n)?;
-                    if let Some(n_text) = nth.text_content() {
-                        if n_text == text {
-                            return Word::text_node(nth);
-                        }
-                    }
-                }
-                None
-            }
-            3 => Some(node),
-            _ => None,
-        }
-    }
+        log::debug!("word.rs :: Creating a map of words from the text content");
+        let words_map = words_map(&text);
 
-    pub fn carret_word(pos: &CaretPosition) -> Option<Self> {
-        let node = pos.offset_node()?;
-
-        if node
-            .dyn_ref::<Element>()
-            .ok_or_else(|| node.parent_element())
-            .map(|e| e.has_attribute(TRIGGER_ATTRIBUTE) || e.has_attribute(PENDING_ATTRIBUTE))
-            .unwrap_or_default()
+        log::debug!("word.rs :: Extracting word details based on the character position");
+        let (wd, start, end, word_pos) = if let Some(word_pos) = words_map
+            .iter()
+            .position(|(start, end, _)| *start <= char_at && *end > char_at)
         {
+            let (start, end, wd) = &words_map[word_pos];
+            (wd.clone(), *start, *end, word_pos)
+        } else {
+            log::debug!("word.rs :: Failed to find word position");
+            return false;
+        };
+
+        self.start == start
+            && self.end == end
+            && self.word_pos == word_pos
+            && self
+                .mark
+                .text_content()
+                .map(|t| t == wd)
+                .unwrap_or_default()
+    }
+
+    pub fn mount_on_text(node: Node, pos: u32) -> Option<Self> {
+        log::debug!("word.rs :: Fetching text node from the provided node");
+        let text_node = text_node(node.clone())?;
+
+        log::debug!("word.rs :: Checking if the text node is already mounted");
+        if is_al_mounted(&text_node) {
+            log::debug!("word.rs :: Text node is already mounted, returning None");
             return None;
         }
 
-        let node = Word::text_node(node)?;
-
+        log::debug!("word.rs :: Fetching text content from the node");
         let text = node.text_content()?;
-        let char_at = pos.offset() as usize;
-        let words_map = text.chars().enumerate().fold(
-            Vec::<(usize, usize, String)>::new(),
-            |mut acc, (at, ch)| {
-                if let Some(entry) = acc.last_mut().filter(|(_, _, w)| {
-                    w.chars().next_back()
-                        .map(|c| c.is_alphabetic())
-                        .unwrap_or_default()
-                        && ch.is_alphabetic()
-                }) {
-                    entry.1 += 1;
-                    entry.2.push(ch);
-                } else {
-                    acc.push((at, at + 1, String::from(ch)));
-                }
-                acc
-            },
-        );
+        let char_at = pos as usize;
 
-        for (word_pos, (start, end, text)) in words_map.into_iter().enumerate() {
-            if start <= char_at && end > char_at {
-                if text.chars().all(|c| c.is_alphabetic()) {
-                    return Some(Word {
-                        text,
-                        start,
-                        end,
-                        word_pos,
-                        node,
-                    });
-                } else {
-                    break;
-                }
-            }
+        log::debug!("word.rs :: Creating a map of words from the text content");
+        let words_map = words_map(&text);
+
+        log::debug!("word.rs :: Extracting word details based on the character position");
+        let (text_before, wd, text_after, start, end, word_pos) = {
+            let word_pos = words_map
+                .iter()
+                .position(|(start, end, _)| *start <= char_at && *end > char_at)?;
+            let (start, end, wd) = &words_map[word_pos];
+            let text_before = text.chars().take(*start).collect::<String>();
+            let text_after = text.chars().skip(*end).collect::<String>();
+            (text_before, wd.clone(), text_after, *start, *end, word_pos)
+        };
+
+        log::debug!("word.rs :: Checking if the extracted word is empty after trimming");
+        if wd.trim().is_empty() {
+            log::debug!("word.rs :: Word is empty, returning None");
+            return None;
         }
 
-        None
-    }
-
-    pub fn animate_mount(&mut self) -> Result<(), JsValue> {
-        let text = self.node.text_content().unwrap();
-
-        let text_before = text.chars().take(self.start).collect::<String>();
-        let text_after = text.chars().skip(self.end).collect::<String>();
-
-        let wd = self.text.clone();
-
+        log::debug!("word.rs :: Creating text nodes for before and after the word");
         let text_node_before = document().create_text_node(&text_before);
         let text_node_after = document().create_text_node(&text_after);
-        let wd_node = document().create_element("mark")?;
 
-        wd_node.set_attribute(PENDING_ATTRIBUTE, "1")?;
-        wd_node.set_attribute(
+        log::debug!("word.rs :: Creating a mark element for the word");
+        let mark = document().create_element("mark").ok()?;
+
+        log::debug!("word.rs :: Setting pending attribute on the mark element");
+        mark.set_attribute(PENDING_ATTRIBUTE, "0").ok()?;
+
+        log::debug!("word.rs :: Setting style attributes on the mark element");
+        mark.set_attribute(
             "style",
             format!("--pending-animation-duration: {TRIGGER_ANIMATED_TIMER}ms; --mark-background-color: rgba({r}, {g}, {b}, 0.75)",
                 r=BRAND_COLOR[0],
                 g=BRAND_COLOR[1],
                 b=BRAND_COLOR[2]
             ).as_str(),
-        )?;
+        ).ok()?;
 
-        wd_node.set_text_content(Some(&wd));
+        log::debug!("word.rs :: Setting text content on the mark element");
+        mark.set_text_content(Some(&wd));
 
-        let replace_node = document().create_element("span")?;
+        log::debug!("word.rs :: Creating a root span element");
+        let root = document().create_element("span").ok()?;
 
-        replace_node.set_attribute("style", "display: inline;")?;
-        replace_node.append_child(&text_node_before)?;
-        replace_node.append_child(&wd_node)?;
-        replace_node.append_child(&text_node_after)?;
+        log::debug!("word.rs :: Setting style and mark root attributes on the root element");
+        root.set_attribute("style", "display: inline;").ok()?;
+        root.set_attribute(MARK_ROOT_ATTRIBUTE, "").ok()?;
 
-        if let Some(par) = self.node.parent_node() {
-            par.replace_child(&replace_node.clone().into(), &self.node)?;
+        log::debug!("word.rs :: Appending text nodes and mark element to the root element");
+        root.append_child(&text_node_before).ok()?;
+        root.append_child(&mark).ok()?;
+        root.append_child(&text_node_after).ok()?;
+
+        log::debug!("word.rs :: Replacing the original text node with the root element");
+        if let Some(par) = text_node.parent_node() {
+            par.replace_child(&root.clone().into(), &text_node).ok()?;
         } else {
-            document().replace_child(&replace_node.clone().into(), &self.node)?;
+            document()
+                .replace_child(&root.clone().into(), &text_node)
+                .ok()?;
         }
 
-        self.node = replace_node.into();
-
-        Ok(())
+        log::debug!("word.rs :: Returning the constructed WordMark instance");
+        Some(Self {
+            start,
+            end,
+            word_pos,
+            root,
+            mark,
+            time: 0.0,
+        })
     }
 
-    pub fn revert_animate(&mut self) -> Result<(), JsValue> {
-        let text = self.node.text_content().unwrap();
+    pub fn unmount(&self) -> Result<(), JsValue> {
+        log::debug!("word.rs :: Fetching text content from the root element");
+        let text = self
+            .root
+            .text_content()
+            .ok_or_else(|| JsValue::from_str("no root text"))?;
+
+        log::debug!("word.rs :: Creating a text node with the fetched text content");
         let text_node = document().create_text_node(&text);
 
-        if let Some(par) = self.node.parent_node() {
-            par.replace_child(&text_node.clone().into(), &self.node)?;
+        log::debug!("word.rs :: Checking if the root element has a parent node");
+        if let Some(par) = self.root.parent_node() {
+            log::debug!(
+                "word.rs :: Replacing the root element with the text node in the parent node"
+            );
+            par.replace_child(&text_node, &self.root.clone().into())?;
         } else {
-            document().replace_child(&text_node.clone().into(), &self.node)?;
+            log::debug!("word.rs :: Replacing the root element with the text node in the document");
+            document().replace_child(&text_node, &self.root.clone().into())?;
         }
-
-        self.node = text_node.into();
 
         Ok(())
     }
 
-    pub fn mount_trigger(&mut self, key: u64) -> Result<(), JsValue> {
-        let text = self.node.text_content().unwrap();
-
-        let text_before = text.chars().take(self.start).collect::<String>();
-        let text_after = text.chars().skip(self.end).collect::<String>();
-
-        let wd = self.text.clone();
-
-        let text_node_before = document().create_text_node(&text_before);
-        let text_node_after = document().create_text_node(&text_after);
-        let wd_node = document().create_element("mark")?;
-
-        wd_node.set_attribute(TRIGGER_ATTRIBUTE, key.to_string().as_str())?;
-        wd_node.set_attribute(
-            "style",
-            format!("--mark-background-color: rgba({r}, {g}, {b}, 0.75)",
-                r=BRAND_COLOR[0],
-                g=BRAND_COLOR[1],
-                b=BRAND_COLOR[2]
-            ).as_str(),
-        )?;
-
-        wd_node.set_text_content(Some(&wd));
-
-        let replace_node = document().create_element("span")?;
-
-        replace_node.set_attribute("style", "display: inline;")?;
-        replace_node.append_child(&text_node_before)?;
-        replace_node.append_child(&wd_node)?;
-        replace_node.append_child(&text_node_after)?;
-
-        if let Some(par) = self.node.parent_node() {
-            par.replace_child(&replace_node.clone().into(), &self.node)?;
-        } else {
-            document().replace_child(&replace_node.clone().into(), &self.node)?;
+    pub fn tick_timer(&mut self, delta: f64) -> bool {
+        if self.time == 0.0 {
+            self.mark.set_attribute(PENDING_ATTRIBUTE, "1").unwrap();
         }
 
-        self.node = replace_node.into();
+        self.time += delta;
+        self.time >= TRIGGER_ANIMATED_TIMER as f64
+    }
 
-        Ok(())
+    pub fn into_permanent(&self, id: uuid::Uuid) -> Result<WordPermanentTrigger, JsValue> {
+        let mark = self.mark.clone();
+
+        mark.remove_attribute(PENDING_ATTRIBUTE)?;
+        mark.set_attribute(TRIGGER_ATTRIBUTE, id.to_string().as_str())?;
+
+        Ok(WordPermanentTrigger {
+            mark,
+            id,
+            start: self.start,
+            end: self.end,
+            word_pos: self.word_pos,
+            root: self.root.clone(),
+            annotation: None,
+        })
+    }
+}
+
+impl WordPermanentTrigger {
+    pub fn id(node: Node) -> Option<uuid::Uuid> {
+        let text_node = text_node(node)?;
+        let text = Some(text_node.text_content()?);
+
+        let mut current_node = text_node;
+
+        while let Some(element) = current_node.dyn_ref::<Element>().cloned().or_else(|| {
+            current_node
+                .parent_node()
+                .map(|p| p.dyn_ref::<Element>().cloned())
+                .flatten()
+        }) {
+            if let Some(id) = element.get_attribute(TRIGGER_ATTRIBUTE) {
+                return uuid::Uuid::from_str(&id).ok();
+            } else if text != element.text_content() {
+                break;
+            } else if let Some(up) = element.parent_node() {
+                current_node = up
+            } else {
+                break;
+            }
+        }
+
+        None
+    }
+}
+
+fn words_map(text: &str) -> Vec<(usize, usize, String)> {
+    text.chars()
+        .enumerate()
+        .fold(Vec::<(usize, usize, String)>::new(), |mut acc, (at, ch)| {
+            if let Some(entry) = acc.last_mut().filter(|(_, _, w)| {
+                w.chars()
+                    .next_back()
+                    .map(|c| c.is_alphabetic())
+                    .unwrap_or_default()
+                    && ch.is_alphabetic()
+            }) {
+                entry.1 += 1;
+                entry.2.push(ch);
+            } else {
+                acc.push((at, at + 1, String::from(ch)));
+            }
+            acc
+        })
+}
+
+fn is_al_mounted(node: &Node) -> bool {
+    let mut current_node = node.clone();
+    while let Some(element) = current_node.dyn_ref::<Element>().cloned().or_else(|| {
+        current_node
+            .parent_node()
+            .map(|p| p.dyn_ref::<Element>().cloned())
+            .flatten()
+    }) {
+        if element.has_attribute(PENDING_ATTRIBUTE) || element.has_attribute(TRIGGER_ATTRIBUTE) {
+            return true;
+        }
+        if let Some(up) = element.parent_node() {
+            current_node = up
+        } else {
+            break;
+        }
+    }
+    false
+}
+
+fn text_node(node: Node) -> Option<Node> {
+    match node.node_type() {
+        1 => {
+            let text = node.text_content()?;
+            let children = node.child_nodes();
+
+            for n in 0..children.length() {
+                let nth = children.get(n)?;
+                if let Some(n_text) = nth.text_content() {
+                    if n_text == text {
+                        return text_node(nth);
+                    }
+                }
+            }
+            None
+        }
+        3 => Some(node),
+        _ => None,
     }
 }

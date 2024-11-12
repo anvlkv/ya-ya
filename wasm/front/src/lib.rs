@@ -23,9 +23,7 @@ fn mount_app() {
     bod.append_with_node_1(&el.clone().into())
         .expect("append app mount");
 
-    let ht_el = el
-        .dyn_ref::<HtmlElement>().cloned()
-        .unwrap();
+    let ht_el = el.dyn_ref::<HtmlElement>().cloned().unwrap();
 
     leptos::mount_to(ht_el, app::App);
 }
