@@ -93,7 +93,7 @@ pub fn App() -> impl IntoView {
 
     _ = use_raf_fn(move |UseRafFnCallbackArgs { delta, .. }| {
         if word_mark.get_untracked().is_some() {
-            update!(|set_word_mark, set_data, set_show_ya| {
+            set_word_mark.update(|set_word_mark| {
                 let wd = set_word_mark.as_mut().unwrap();
                 log::debug!("app.rs :: Starting tick_timer for WordMark");
                 let ended = wd.tick_timer(delta);
@@ -102,13 +102,17 @@ pub fn App() -> impl IntoView {
                     let id = uuid::Uuid::new_v4();
                     let permanent = wd.into_permanent(id).unwrap();
                     *set_word_mark = None;
-                    log::debug!(
-                        "app.rs :: Inserting permanent WordMark into data with ID: {:?}",
-                        id
-                    );
-                    _ = set_data.insert(id, RwSignal::new(permanent));
-                    log::debug!("app.rs :: Inserting ID into show_ya: {:?}", id);
-                    _ = set_show_ya.insert(id);
+                    set_data.update(|set_data| {
+                        log::debug!(
+                            "app.rs :: Inserting permanent WordMark into data with ID: {:?}",
+                            id
+                        );
+                        _ = set_data.insert(id, RwSignal::new(permanent));
+                    });
+                    set_show_ya.update(|set_show_ya| {
+                        log::debug!("app.rs :: Inserting ID into show_ya: {:?}", id);
+                        _ = set_show_ya.insert(id);
+                    });
                 }
             });
         }
