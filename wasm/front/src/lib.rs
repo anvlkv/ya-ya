@@ -2,7 +2,7 @@ mod app;
 
 use leptos::*;
 use wasm_bindgen::prelude::*;
-use web_sys::{window, HtmlElement};
+use web_sys::HtmlElement;
 
 const MOUNT: &str = "ya-ya-exetension-mount";
 
@@ -15,8 +15,7 @@ pub fn main() {
 
 fn mount_app() {
     let doc = web_sys::window()
-        .map(|w| w.document())
-        .flatten()
+        .and_then(|w| w.document())
         .expect("document");
     let el = doc.create_element("div").expect("create app mount");
     el.set_id(MOUNT);
@@ -25,8 +24,7 @@ fn mount_app() {
         .expect("append app mount");
 
     let ht_el = el
-        .dyn_ref::<HtmlElement>()
-        .map(|html_element| html_element.clone())
+        .dyn_ref::<HtmlElement>().cloned()
         .unwrap();
 
     leptos::mount_to(ht_el, app::App);

@@ -8,16 +8,23 @@
     z-index: 8000;
 }
 
+mark[data-ya-ya-trigger-word] {
+    background-color: unset;
+}
+mark[data-ya-ya-trigger-word],
 mark[data-ya-ya-pending-word] {
     letter-spacing: 0.3rem;
-    background-color: var(--mark-background-color);
     color: black;
+    border-radius: 0.3em;
+    padding-inline: 0.6rem;
+    word-break: break-all;
+}
+mark[data-ya-ya-pending-word] {
+    background-color: var(--mark-background-color);
     animation-name: pending-animation;
     animation-duration: var(--pending-animation-duration);
     animation-iteration-count: 1;
     animation-direction: normal;
-    border-radius: 0.3em;
-    padding-inline: 0.6rem;
 }
 
 @keyframes pending-animation {

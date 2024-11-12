@@ -1951,7 +1951,6 @@ dependencies = [
  "leptos",
  "leptos-use",
  "log",
- "unicode-segmentation",
  "wasm-bindgen",
  "web-sys",
 ]

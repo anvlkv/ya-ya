@@ -1,11 +1,12 @@
 [package]
 name = "ya-ya-background"
-version = "0.1.0"
-edition = "2021"
+version = { workspace = true }
+edition = { workspace = true }
+resolver = "2"
 
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
-wasm-bindgen = {workspace = true}
-web-sys = {workspace = true}
+wasm-bindgen = { workspace = true }
+web-sys = { workspace = true }
