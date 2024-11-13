@@ -10,6 +10,7 @@ const MOUNT: &str = "ya-ya-exetension-mount";
 pub fn main() {
     _ = console_log::init_with_level(log::Level::Debug);
     console_error_panic_hook::set_once();
+    log::info!("init log content");
     mount_app()
 }
 
@@ -26,4 +27,10 @@ fn mount_app() {
     let ht_el = el.dyn_ref::<HtmlElement>().cloned().unwrap();
 
     mount_to(ht_el, app::App);
+}
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_name = "sendMessage")]
+    pub async fn send_message() -> JsValue;
 }

@@ -1969,6 +1969,7 @@ dependencies = [
  "markdown",
  "uuid",
  "wasm-bindgen",
+ "wasm-bindgen-futures",
  "web-sys",
 ]
 

@@ -2,7 +2,7 @@ use leptos::*;
 
 #[component]
 pub fn App() -> impl IntoView {
-    view!{
+    view! {
         <p>
             Ясно...
         </p>

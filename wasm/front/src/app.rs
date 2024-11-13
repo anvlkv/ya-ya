@@ -149,13 +149,15 @@ pub fn App() -> impl IntoView {
         });
     });
 
+    let regenerate_cb = Callback::new(move |id: Uuid| {});
+
     view! {
         <div node_ref=extension_root>
             <For each=move || visible_words.get()
                 key=|wd| wd.1
                 let:word
             >
-                <YaWordPopover word=word.0 close_cb/>
+                <YaWordPopover word=word.0 close_cb regenerate_cb/>
             </For>
         </div>
     }

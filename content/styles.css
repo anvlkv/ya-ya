@@ -8,6 +8,7 @@
     height: 0;
     overflow: visible;
     z-index: 8000;
+    font-family: Helvetica, Arial, sans-serif;
 }
 
 mark[data-ya-ya-trigger-word],
@@ -150,4 +151,13 @@ mark[data-ya-ya-pending-word] {
     flex-direction: column;
     align-items: center;
     gap: 1rem;
+}
+
+.ya-ya-close-button {
+}
+
+.ya-ya-button {
+}
+
+.ya-ya-cta-button {
 }

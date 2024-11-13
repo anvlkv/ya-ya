@@ -52,6 +52,7 @@ impl CalloutSide {
 pub fn YaWordPopover(
     #[prop(into)] word: MaybeSignal<WordPermanentTrigger>,
     #[prop(into)] close_cb: Callback<(Uuid, Option<bool>)>,
+    #[prop(into)] regenerate_cb: Callback<Uuid>,
 ) -> impl IntoView {
     let word = Signal::derive(move || word.get());
     let mark_el = Signal::derive(move || word.get().mark);
@@ -86,78 +87,87 @@ pub fn YaWordPopover(
         height: win_height,
     } = use_window_size();
 
-    let side = create_memo(move |_| {
-        let mut side = CalloutSide::Top;
-
+    let side = create_memo(move |prev| {
         let available_top = mark_top.get();
-        let available_bottom = win_height.get() - mark_bottom.get();
+        let available_bottom = mark_bottom.get();
         let available_left = mark_left.get();
-        let available_right = win_width.get() - mark_right.get();
+        let available_right = mark_right.get();
 
         let required_height = popover_height.get();
         let required_width = popover_width.get();
 
-        let prefer_bottom = available_top > available_bottom;
-        let prefer_left = available_right > available_left;
-
-        let prefer_centered = {
-            let available_center_x = (win_width.get() - popover_width.get()) / 2.0;
-            let available_center_y = (win_height.get() - popover_height.get()) / 2.0;
-
-            available_center_x > popover_width.get() / 2.0
-                && available_center_y > popover_height.get() / 2.0
-        };
-
-        let prefer_sideways =
-            available_left.max(available_right) > available_top.max(available_bottom);
-
-        if prefer_centered {
-            if prefer_sideways {
-                if available_left > available_right {
-                    side = CalloutSide::Right;
-                } else {
-                    side = CalloutSide::Left;
-                }
-            } else {
-                if available_top > available_bottom {
-                    side = CalloutSide::Bottom;
-                } else {
-                    side = CalloutSide::Top;
-                }
+        if let Some(prev) = prev.filter(|side| match side {
+            CalloutSide::Top => {
+                let h_w = required_width / 2.0;
+                available_bottom >= required_height && h_w < available_left && h_w < available_right
             }
+            CalloutSide::Left => {
+                let h_h = required_height / 2.0;
+                available_right >= required_width && h_h < available_top && h_h < available_bottom
+            }
+            CalloutSide::Bottom => {
+                let h_w = required_width / 2.0;
+                available_top >= required_height && h_w < available_left && h_w < available_right
+            }
+            CalloutSide::Right => {
+                let h_h = required_height / 2.0;
+                available_left >= required_width && h_h < available_top && h_h < available_bottom
+            }
+            CalloutSide::TopLeft => {
+                available_bottom >= required_height && available_right >= required_width
+            }
+            CalloutSide::TopRight => {
+                available_bottom >= required_height && available_left >= required_width
+            }
+            CalloutSide::BottomLeft => {
+                available_top >= required_height && available_right >= required_width
+            }
+            CalloutSide::BottomRight => {
+                available_top >= required_height && available_left >= required_width
+            }
+        }) {
+            *prev
         } else {
-            if prefer_sideways {
-                if available_left > available_right {
-                    if available_top > available_bottom {
-                        side = CalloutSide::BottomRight;
-                    } else {
-                        side = CalloutSide::TopRight;
-                    }
-                } else {
-                    if available_top > available_bottom {
-                        side = CalloutSide::BottomLeft;
-                    } else {
-                        side = CalloutSide::TopLeft;
-                    }
-                }
+            let prefer_bottom = available_top < available_bottom;
+            let prefer_left = available_right > available_left;
+
+            let prefer_sideways =
+                available_left.max(available_right) > available_top.max(available_bottom);
+
+            let prefer_corner = if prefer_sideways {
+                let half = required_height / 2.0;
+                available_top < half || available_bottom < half
             } else {
-                if available_top > available_bottom {
-                    if available_left > available_right {
-                        side = CalloutSide::BottomRight;
+                let half = required_width / 2.0;
+                available_left < half || available_right < half
+            };
+
+            if prefer_corner {
+                if prefer_bottom {
+                    if prefer_left {
+                        CalloutSide::TopRight
                     } else {
-                        side = CalloutSide::BottomLeft;
+                        CalloutSide::TopLeft
                     }
                 } else {
-                    if available_left > available_right {
-                        side = CalloutSide::TopRight;
+                    if prefer_left {
+                        CalloutSide::BottomRight
                     } else {
-                        side = CalloutSide::TopLeft;
+                        CalloutSide::BottomLeft
                     }
                 }
+            } else if prefer_sideways {
+                if prefer_left {
+                    CalloutSide::Right
+                } else {
+                    CalloutSide::Left
+                }
+            } else if prefer_bottom {
+                CalloutSide::Top
+            } else {
+                CalloutSide::Bottom
             }
         }
-
-        side
     });
 
     let pos_style = create_memo(move |_| {
@@ -246,6 +256,13 @@ pub fn YaWordPopover(
             .map(|a| markdown::to_html(a.as_str()))
     });
 
+    let on_close = move |_| {
+        close_cb.call((
+            word.get().id,
+            word.get().annotation.map(|_| Some(false)).unwrap_or(None),
+        ));
+    };
+
     view! {
         <div
             class=class
@@ -255,6 +272,13 @@ pub fn YaWordPopover(
             aria-describedby=move || format!("mark-{}", word.get().id)
             node_ref=popover_el
         >
+            <button
+                class="ya-ya-close-button"
+                on:click=on_close
+                title="Закрыть"
+            >
+                "×"
+            </button>
             <div class="ya-ya-content">
                 <Show
                     when={move ||content.get().is_some()}
@@ -264,8 +288,25 @@ pub fn YaWordPopover(
                     }}
                 >
                     <div style:display="contents" inner_html=content/>
+                    <div class="ya-ya-footer">
+                        <button
+                            class="ya-ya-button"
+                            on:click=move |_| {
+                                regenerate_cb.call(word.get().id);
+                            }
+                        >
+                            "↺ Не понятно"
+                        </button>
+                        <button
+                            class="ya-ya-button-cta"
+                            on:click=move |_| {
+                                close_cb.call((word.get().id, Some(true)));
+                            }
+                        >
+                            "✔︎ Ясно"
+                        </button>
+                    </div>
                 </Show>
-
             </div>
         </div>
     }
