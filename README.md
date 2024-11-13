@@ -11,7 +11,7 @@ cargo install cargo-watch
 ```
 
 ```
-cargo install wasm-pack
+cargo install cargo-leptos
 ```
 
 ```
@@ -20,6 +20,10 @@ wasm-pack build wasm/front
 
 ```
 wasm-pack build wasm/background
+```
+
+```
+wasm-pack build wasm/popup
 ```
 
 ### Development

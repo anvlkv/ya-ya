@@ -12,7 +12,9 @@
 }
 
 mark[data-ya-ya-trigger-word],
-mark[data-ya-ya-pending-word] {
+mark[data-ya-ya-pending-word],
+mark[data-ya-ya-trigger-text],
+mark[data-ya-ya-pending-text] {
     background-color: var(--mark-background-color);
     letter-spacing: 0.3rem;
     color: black;
@@ -20,7 +22,8 @@ mark[data-ya-ya-pending-word] {
     padding-inline: 0.6rem;
     word-break: break-all;
 }
-mark[data-ya-ya-pending-word] {
+mark[data-ya-ya-pending-word],
+mark[data-ya-ya-pending-text] {
     animation-name: ya-ya-pending-animation;
     animation-duration: var(--pending-animation-duration);
     animation-iteration-count: 1;
@@ -54,6 +57,9 @@ mark[data-ya-ya-pending-word] {
     padding: 1rem;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     word-break: initial;
+}
+.ya-ya-popover-inner {
+    position: relative;
 }
 .ya-ya-popover .ya-ya-content {
     overflow: auto;
@@ -151,9 +157,19 @@ mark[data-ya-ya-pending-word] {
     flex-direction: column;
     align-items: center;
     gap: 1rem;
+    margin: 0;
 }
 
 .ya-ya-close-button {
+    position: absolute;
+    right: -1rem;
+    top: -1rem;
+    background: transparent;
+    border: none;
+    padding: 0.5rem;
+    font-size: x-large;
+    color: darkgray;
+    cursor: pointer;
 }
 
 .ya-ya-button {

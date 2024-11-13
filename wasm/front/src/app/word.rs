@@ -1,7 +1,8 @@
 use std::str::FromStr;
 
 use super::{
-    BRAND_COLOR, MARK_ROOT_ATTRIBUTE, PENDING_ATTRIBUTE, TRIGGER_ANIMATED_TIMER, TRIGGER_ATTRIBUTE,
+    util::*, BRAND_COLOR, MARK_ROOT_ATTRIBUTE, PENDING_ATTRIBUTE_WORD, TRIGGER_ANIMATED_TIMER,
+    TRIGGER_ATTRIBUTE_WORD,
 };
 
 use leptos::document;
@@ -45,7 +46,7 @@ impl WordMark {
         };
 
         log::debug!("word.rs :: Fetching text content from the node");
-        let text = if let Some(text) = node.text_content() {
+        let text = if let Some(text) = text_node.text_content() {
             text
         } else {
             log::debug!("word.rs :: Failed to get text content");
@@ -121,7 +122,7 @@ impl WordMark {
         let mark = document().create_element("mark").ok()?;
 
         log::debug!("word.rs :: Setting pending attribute on the mark element");
-        mark.set_attribute(PENDING_ATTRIBUTE, "0").ok()?;
+        mark.set_attribute(PENDING_ATTRIBUTE_WORD, "0").ok()?;
 
         log::debug!("word.rs :: Setting style attributes on the mark element");
         mark.set_attribute(
@@ -194,7 +195,9 @@ impl WordMark {
 
     pub fn tick_timer(&mut self, delta: f64) -> bool {
         if self.time == 0.0 {
-            self.mark.set_attribute(PENDING_ATTRIBUTE, "1").unwrap();
+            self.mark
+                .set_attribute(PENDING_ATTRIBUTE_WORD, "1")
+                .unwrap();
         }
 
         self.time += delta;
@@ -204,8 +207,8 @@ impl WordMark {
     pub fn into_permanent(&self, id: Uuid) -> Result<WordPermanentTrigger, JsValue> {
         let mark = self.mark.clone();
 
-        mark.remove_attribute(PENDING_ATTRIBUTE)?;
-        mark.set_attribute(TRIGGER_ATTRIBUTE, id.to_string().as_str())?;
+        mark.remove_attribute(PENDING_ATTRIBUTE_WORD)?;
+        mark.set_attribute(TRIGGER_ATTRIBUTE_WORD, id.to_string().as_str())?;
         mark.set_attribute("id", format!("mark-{id}").as_str())?;
 
         Ok(WordPermanentTrigger {
@@ -221,6 +224,30 @@ impl WordMark {
 }
 
 impl WordPermanentTrigger {
+    pub fn unmount(&self) -> Result<(), JsValue> {
+        log::debug!("word.rs :: Fetching text content from the root element");
+        let text = self
+            .root
+            .text_content()
+            .ok_or_else(|| JsValue::from_str("no root text"))?;
+
+        log::debug!("word.rs :: Creating a text node with the fetched text content");
+        let text_node = document().create_text_node(&text);
+
+        log::debug!("word.rs :: Checking if the root element has a parent node");
+        if let Some(par) = self.root.parent_node() {
+            log::debug!(
+                "word.rs :: Replacing the root element with the text node in the parent node"
+            );
+            par.replace_child(&text_node, &self.root.clone().into())?;
+        } else {
+            log::debug!("word.rs :: Replacing the root element with the text node in the document");
+            document().replace_child(&text_node, &self.root.clone().into())?;
+        }
+
+        Ok(())
+    }
+
     pub fn id(node: Node) -> Option<Uuid> {
         let text_node = text_node(node)?;
         let text = Some(text_node.text_content()?);
@@ -233,7 +260,7 @@ impl WordPermanentTrigger {
                 .map(|p| p.dyn_ref::<Element>().cloned())
                 .flatten()
         }) {
-            if let Some(id) = element.get_attribute(TRIGGER_ATTRIBUTE) {
+            if let Some(id) = element.get_attribute(TRIGGER_ATTRIBUTE_WORD) {
                 return Uuid::from_str(&id).ok();
             } else if text != element.text_content() {
                 break;
@@ -245,66 +272,5 @@ impl WordPermanentTrigger {
         }
 
         None
-    }
-}
-
-fn words_map(text: &str) -> Vec<(usize, usize, String)> {
-    text.chars()
-        .enumerate()
-        .fold(Vec::<(usize, usize, String)>::new(), |mut acc, (at, ch)| {
-            if let Some(entry) = acc.last_mut().filter(|(_, _, w)| {
-                w.chars()
-                    .next_back()
-                    .map(|c| c.is_alphabetic())
-                    .unwrap_or_default()
-                    && ch.is_alphabetic()
-            }) {
-                entry.1 += 1;
-                entry.2.push(ch);
-            } else {
-                acc.push((at, at + 1, String::from(ch)));
-            }
-            acc
-        })
-}
-
-fn is_al_mounted(node: &Node) -> bool {
-    let mut current_node = node.clone();
-    while let Some(element) = current_node.dyn_ref::<Element>().cloned().or_else(|| {
-        current_node
-            .parent_node()
-            .map(|p| p.dyn_ref::<Element>().cloned())
-            .flatten()
-    }) {
-        if element.has_attribute(PENDING_ATTRIBUTE) || element.has_attribute(TRIGGER_ATTRIBUTE) {
-            return true;
-        }
-        if let Some(up) = element.parent_node() {
-            current_node = up
-        } else {
-            break;
-        }
-    }
-    false
-}
-
-fn text_node(node: Node) -> Option<Node> {
-    match node.node_type() {
-        1 => {
-            let text = node.text_content()?;
-            let children = node.child_nodes();
-
-            for n in 0..children.length() {
-                let nth = children.get(n)?;
-                if let Some(n_text) = nth.text_content() {
-                    if n_text == text {
-                        return text_node(nth);
-                    }
-                }
-            }
-            None
-        }
-        3 => Some(node),
-        _ => None,
     }
 }

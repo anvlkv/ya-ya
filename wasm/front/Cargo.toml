@@ -19,6 +19,10 @@ web-sys = { workspace = true, features = [
     "Node",
     "CaretPosition",
     "EventTarget",
+    "PointerEvent",
+    "Selection",
+    "DomRect",
+    "Range",
 ] }
 wasm-bindgen = { workspace = true }
 leptos = { version = "0.6", features = ["csr"] }

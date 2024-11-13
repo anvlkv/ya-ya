@@ -6,7 +6,7 @@ use web_sys::HtmlElement;
 
 const MOUNT: &str = "ya-ya-exetension-mount";
 
-#[wasm_bindgen(start)]
+#[wasm_bindgen]
 pub fn main() {
     _ = console_log::init_with_level(log::Level::Debug);
     console_error_panic_hook::set_once();
