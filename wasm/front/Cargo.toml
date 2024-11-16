@@ -23,6 +23,8 @@ web-sys = { workspace = true, features = [
     "Selection",
     "DomRect",
     "Range",
+    "NodeFilter",
+    "NodeIterator",
 ] }
 wasm-bindgen = { workspace = true }
 leptos = { version = "0.6", features = ["csr"] }
@@ -34,3 +36,4 @@ js-sys = "0.3.72"
 uuid = { version = "1.11.0", features = ["v4"] }
 markdown = "1.0.0-alpha.21"
 wasm-bindgen-futures = "0.4.45"
+cfg-if = { workspace = true }

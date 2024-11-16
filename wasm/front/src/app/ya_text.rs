@@ -1,8 +1,5 @@
 use leptos::*;
-use leptos_use::{
-    use_element_bounding, use_window_scroll, use_window_size, UseElementBoundingReturn,
-    UseWindowSizeReturn,
-};
+use leptos_use::use_window_scroll;
 use uuid::Uuid;
 use web_sys::Element;
 
@@ -24,7 +21,7 @@ pub fn YaTextPopover(
         let els = mark_els.get();
         let scroll_y_value = scroll_y.get();
         let mut closest_mark: Option<Element> = els.first().cloned();
-        let mut closest_distance = std::f64::INFINITY;
+        let mut closest_distance = f64::INFINITY;
 
         for mark in els.into_iter() {
             let rect = mark.get_bounding_client_rect();

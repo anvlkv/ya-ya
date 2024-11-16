@@ -201,10 +201,10 @@ impl WordMark {
         }
 
         self.time += delta;
-        self.time >= TRIGGER_ANIMATED_TIMER as f64
+        self.time >= TRIGGER_ANIMATED_TIMER
     }
 
-    pub fn into_permanent(&self, id: Uuid) -> Result<WordPermanentTrigger, JsValue> {
+    pub fn make_permanent(&self, id: Uuid) -> Result<WordPermanentTrigger, JsValue> {
         let mark = self.mark.clone();
 
         mark.remove_attribute(PENDING_ATTRIBUTE_WORD)?;
@@ -257,8 +257,7 @@ impl WordPermanentTrigger {
         while let Some(element) = current_node.dyn_ref::<Element>().cloned().or_else(|| {
             current_node
                 .parent_node()
-                .map(|p| p.dyn_ref::<Element>().cloned())
-                .flatten()
+                .and_then(|p| p.dyn_ref::<Element>().cloned())
         }) {
             if let Some(id) = element.get_attribute(TRIGGER_ATTRIBUTE_WORD) {
                 return Uuid::from_str(&id).ok();

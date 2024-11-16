@@ -14,6 +14,7 @@ use leptos_use::{
 };
 use text::{TextMark, TextPermanentTrigger};
 use uuid::Uuid;
+use wasm_bindgen::JsValue;
 use web_sys::CaretPosition;
 use word::{WordMark, WordPermanentTrigger};
 use ya_text::YaTextPopover;
@@ -43,6 +44,46 @@ impl PermanentTrigger {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+enum PendingMark {
+    Word(WordMark),
+    Text(TextMark),
+}
+
+impl PendingMark {
+    fn unmount(&self) -> Result<(), wasm_bindgen::JsValue> {
+        match self {
+            Self::Word(wd) => wd.unmount(),
+            Self::Text(tx) => tx.unmount(),
+        }
+    }
+
+    fn tick_timer(&mut self, delta: f64) -> bool {
+        match self {
+            Self::Word(wd) => wd.tick_timer(delta),
+            Self::Text(tx) => tx.tick_timer(delta),
+        }
+    }
+
+    fn make_permanent(&self, id: Uuid) -> Result<PermanentTrigger, JsValue> {
+        match self {
+            Self::Word(wd) => wd
+                .make_permanent(id)
+                .map(|d| PermanentTrigger::Word(RwSignal::new(d))),
+            Self::Text(tx) => tx
+                .make_permanent(id)
+                .map(|d| PermanentTrigger::Text(RwSignal::new(d))),
+        }
+    }
+
+    fn is_same(&self, node: web_sys::Node, pos: u32) -> bool {
+        match self {
+            Self::Word(wd) => wd.is_same(node, pos),
+            Self::Text(_) => false,
+        }
+    }
+}
+
 #[component]
 pub fn App() -> impl IntoView {
     let extension_root = create_node_ref::<html::Div>();
@@ -50,11 +91,21 @@ pub fn App() -> impl IntoView {
     let (data, set_data) = create_signal(HashMap::<Uuid, PermanentTrigger>::new());
     let (show_ya, set_show_ya) = create_signal(BTreeSet::<Uuid>::new());
 
-    let (word_mark, set_word_mark) = create_signal(Option::<WordMark>::None);
-    let (text_mark, set_text_mark) = create_signal(Option::<TextMark>::None);
+    let (pending_mark, set_pending_mark) = create_signal(Option::<PendingMark>::None);
+
     let (caret, set_caret) = create_signal(Option::<CaretPosition>::None);
     let caret = signal_debounced(caret, BEFORE_TRIGGER_TIMER);
     let (pointer, set_pointer) = create_signal(false);
+
+    let replace_pending = Callback::new(move |mark: Option<PendingMark>| {
+        set_pending_mark.update(|c| {
+            if let Some(old_mark) = c.take() {
+                log::debug!("app.rs :: Removing old PendingMark");
+                old_mark.unmount().unwrap();
+            }
+            *c = mark;
+        });
+    });
 
     let clear_mouse_move_listener = use_event_listener(use_window(), ev::mousemove, move |evt| {
         let x = evt.client_x() as f32;
@@ -68,18 +119,7 @@ pub fn App() -> impl IntoView {
                 set_caret.set(car.filter(|car| !root.contains(car.offset_node().as_ref())));
             }
         } else {
-            set_word_mark.update(|c| {
-                if let Some(old_mark) = c.take() {
-                    log::debug!("app.rs :: Removing old WordMark");
-                    old_mark.unmount().unwrap();
-                }
-            });
-            set_text_mark.update(|c| {
-                if let Some(old_mark) = c.take() {
-                    log::debug!("app.rs :: Removing old TextMark");
-                    old_mark.unmount().unwrap();
-                }
-            });
+            replace_pending.call(None)
         }
     });
 
@@ -96,86 +136,72 @@ pub fn App() -> impl IntoView {
             .ok()
             .flatten()
             .filter(|s| !s.is_collapsed())
-            .map(|s| s.get_range_at(0).ok())
-            .flatten()
+            .and_then(|s| s.get_range_at(0).ok())
         {
             if let Some(new_tx_mark) = TextMark::mount_on_text(selection_rng) {
                 log::debug!("app.rs :: Mounting new TextMark");
-                set_text_mark.update(|c| {
-                    if let Some(old_mark) = c.replace(new_tx_mark) {
-                        log::debug!("app.rs :: Unmounting old TextMark");
-                        old_mark.unmount().unwrap();
-                    }
-                });
+                replace_pending.call(Some(PendingMark::Text(new_tx_mark)));
             }
         }
     });
 
     create_effect(move |_| {
-        if let Some(id) = caret
-            .get()
-            .map(|car| {
-                car.offset_node()
-                    .and_then(|node| WordPermanentTrigger::id(node))
-            })
+        let no_selection = web_sys::window()
+            .unwrap()
+            .get_selection()
+            .ok()
             .flatten()
-        {
-            log::debug!("app.rs :: Found WordPermanentTrigger with ID: {:?}", id);
+            .map(|s| s.is_collapsed())
+            .unwrap_or(true);
+
+        if let Some(id) = caret.get().and_then(|car| {
+            car.offset_node().and_then(|node| {
+                WordPermanentTrigger::id(node.clone()).or_else(|| TextPermanentTrigger::id(node))
+            })
+        }) {
+            log::debug!("app.rs :: Found PermanentTrigger with ID: {:?}", id);
             set_show_ya.update(|d| {
                 _ = d.insert(id);
             });
-        } else if let Some(new_wd_mark) = caret
-            .get()
-            .map(|car| {
-                car.offset_node()
-                    .and_then(|node| WordMark::mount_on_text(node, car.offset()))
-            })
-            .flatten()
-        {
+        } else if let Some(new_wd_mark) = caret.get().filter(|_| no_selection).and_then(|car| {
+            car.offset_node()
+                .and_then(|node| WordMark::mount_on_text(node, car.offset()))
+        }) {
             log::debug!("app.rs :: Mounting new WordMark");
-            set_word_mark.update(|c| {
-                if let Some(old_mark) = c.replace(new_wd_mark) {
-                    log::debug!("app.rs :: Unmounting old WordMark");
-                    old_mark.unmount().unwrap();
-                }
-            });
+            replace_pending.call(Some(PendingMark::Word(new_wd_mark)));
         } else if caret
             .get()
-            .map(|car| {
+            .filter(|_| no_selection)
+            .and_then(|car| {
                 car.offset_node().and_then(|node| {
-                    word_mark
+                    pending_mark
                         .with_untracked(|wd| wd.as_ref().map(|wd| !wd.is_same(node, car.offset())))
                 })
             })
-            .flatten()
-            .unwrap_or(true)
+            .unwrap_or(no_selection)
         {
-            set_word_mark.update(|c| {
-                if let Some(old_mark) = c.take() {
-                    log::debug!("app.rs :: Removing old WordMark");
-                    old_mark.unmount().unwrap();
-                }
-            });
+            log::debug!("clear pendning mark on carret move");
+            replace_pending.call(None);
         }
     });
 
     _ = use_raf_fn(move |UseRafFnCallbackArgs { delta, .. }| {
-        if word_mark.get_untracked().is_some() {
-            set_word_mark.update(|set_word_mark| {
-                let wd = set_word_mark.as_mut().unwrap();
+        if pending_mark.get_untracked().is_some() {
+            set_pending_mark.update(|set_pending_mark| {
+                let wd = set_pending_mark.as_mut().unwrap();
                 log::debug!("app.rs :: Starting tick_timer for WordMark");
                 let ended = wd.tick_timer(delta);
                 if ended {
                     log::debug!("app.rs :: tick_timer ended, converting WordMark to permanent");
                     let id = Uuid::new_v4();
-                    let permanent = wd.into_permanent(id).unwrap();
-                    *set_word_mark = None;
+                    let permanent = wd.make_permanent(id).unwrap();
+                    *set_pending_mark = None;
                     set_data.update(|set_data| {
                         log::debug!(
                             "app.rs :: Inserting permanent WordMark into data with ID: {:?}",
                             id
                         );
-                        _ = set_data.insert(id, PermanentTrigger::Word(RwSignal::new(permanent)));
+                        _ = set_data.insert(id, permanent);
                     });
                     set_show_ya.update(|set_show_ya| {
                         log::debug!("app.rs :: Inserting ID into show_ya: {:?}", id);
@@ -187,13 +213,13 @@ pub fn App() -> impl IntoView {
     });
 
     let clear_mouse_out_listener = use_event_listener(use_window(), ev::mouseleave, move |_| {
-        set_word_mark.update(|c| {
-            log::debug!("app.rs :: Handling mouseleave event");
-            if let Some(old_mark) = c.take() {
-                log::debug!("app.rs :: Unmounting old WordMark due to mouseleave");
-                old_mark.unmount().unwrap();
-            }
-        });
+        log::debug!("clear pendning mark on ev::mouseleave");
+        replace_pending.call(None);
+    });
+
+    let clear_win_blur_listener = use_event_listener(use_window(), ev::blur, move |_| {
+        log::debug!("clear pendning mark on ev::blur");
+        replace_pending.call(None);
     });
 
     on_cleanup(move || {
@@ -201,6 +227,7 @@ pub fn App() -> impl IntoView {
         clear_mouse_out_listener();
         clear_pointer_down_listener();
         clear_pointer_up_listener();
+        clear_win_blur_listener();
     });
 
     let visible_annotations = create_memo(move |_| {

@@ -30,8 +30,7 @@ pub fn is_al_mounted(node: &Node) -> bool {
     while let Some(element) = current_node.dyn_ref::<Element>().cloned().or_else(|| {
         current_node
             .parent_node()
-            .map(|p| p.dyn_ref::<Element>().cloned())
-            .flatten()
+            .and_then(|p| p.dyn_ref::<Element>().cloned())
     }) {
         if element.has_attribute(PENDING_ATTRIBUTE_WORD)
             || element.has_attribute(TRIGGER_ATTRIBUTE_WORD)

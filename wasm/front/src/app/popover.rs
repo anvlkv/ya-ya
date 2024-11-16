@@ -3,11 +3,7 @@ use leptos_use::{
     use_element_bounding, use_window_scroll, use_window_size, UseElementBoundingReturn,
     UseWindowSizeReturn,
 };
-use uuid::Uuid;
 use web_sys::Element;
-
-use super::loading::Loading;
-use super::word::WordPermanentTrigger;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum CalloutSide {

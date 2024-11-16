@@ -1,5 +1,6 @@
 mod app;
 
+use cfg_if::cfg_if;
 use leptos::*;
 use wasm_bindgen::prelude::*;
 use web_sys::HtmlElement;
@@ -8,7 +9,13 @@ const MOUNT: &str = "ya-ya-exetension-mount";
 
 #[wasm_bindgen]
 pub fn main() {
-    _ = console_log::init_with_level(log::Level::Debug);
+    _ = console_log::init_with_level({
+        cfg_if! {if #[cfg(debug_assertions)] {
+            log::Level::Debug
+        }else {
+            log::Level::Info
+        }}
+    });
     console_error_panic_hook::set_once();
     log::info!("init log content");
     mount_app()
