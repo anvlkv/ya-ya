@@ -2,7 +2,7 @@ use wasm_bindgen::JsCast;
 use web_sys::{Element, Node};
 
 use super::{
-    PENDING_ATTRIBUTE_TEXT, PENDING_ATTRIBUTE_WORD, TRIGGER_ATTRIBUTE_TEXT, TRIGGER_ATTRIBUTE_WORD,
+    PENDING_ATTRIBUTE_WORD, TRIGGER_ATTRIBUTE_WORD,
 };
 
 pub fn words_map(text: &str) -> Vec<(usize, usize, String)> {
@@ -34,8 +34,6 @@ pub fn is_al_mounted(node: &Node) -> bool {
     }) {
         if element.has_attribute(PENDING_ATTRIBUTE_WORD)
             || element.has_attribute(TRIGGER_ATTRIBUTE_WORD)
-            || element.has_attribute(PENDING_ATTRIBUTE_TEXT)
-            || element.has_attribute(TRIGGER_ATTRIBUTE_TEXT)
         {
             return true;
         }

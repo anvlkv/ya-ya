@@ -1,9 +1,7 @@
 mod loading;
 mod popover;
-mod text;
 mod util;
 mod word;
-mod ya_text;
 mod ya_word;
 
 use std::collections::{BTreeSet, HashMap};
@@ -12,34 +10,28 @@ use leptos::*;
 use leptos_use::{
     signal_debounced, use_event_listener, use_raf_fn, use_window, UseRafFnCallbackArgs,
 };
-use text::{TextMark, TextPermanentTrigger};
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 use web_sys::CaretPosition;
 use word::{WordMark, WordPermanentTrigger};
-use ya_text::YaTextPopover;
 use ya_word::YaWordPopover;
 
 pub const BEFORE_TRIGGER_TIMER: f64 = 200.0;
 pub const TRIGGER_ANIMATED_TIMER: f64 = 1600.0;
 pub const MARK_ROOT_ATTRIBUTE: &str = "data-ya-ya-mark-root";
 pub const TRIGGER_ATTRIBUTE_WORD: &str = "data-ya-ya-trigger-word";
-pub const TRIGGER_ATTRIBUTE_TEXT: &str = "data-ya-ya-trigger-text";
 pub const PENDING_ATTRIBUTE_WORD: &str = "data-ya-ya-pending-word";
-pub const PENDING_ATTRIBUTE_TEXT: &str = "data-ya-ya-pending-text";
 pub const BRAND_COLOR: [u8; 3] = [239, 207, 227];
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum PermanentTrigger {
     Word(RwSignal<WordPermanentTrigger>),
-    Text(RwSignal<TextPermanentTrigger>),
 }
 
 impl PermanentTrigger {
     fn unmount(&self) -> Result<(), wasm_bindgen::JsValue> {
         match self {
             Self::Word(wd) => wd.get_untracked().unmount(),
-            Self::Text(tx) => tx.get_untracked().unmount(),
         }
     }
 }
@@ -47,21 +39,18 @@ impl PermanentTrigger {
 #[derive(Debug, Clone, PartialEq)]
 enum PendingMark {
     Word(WordMark),
-    Text(TextMark),
 }
 
 impl PendingMark {
     fn unmount(&self) -> Result<(), wasm_bindgen::JsValue> {
         match self {
             Self::Word(wd) => wd.unmount(),
-            Self::Text(tx) => tx.unmount(),
         }
     }
 
     fn tick_timer(&mut self, delta: f64) -> bool {
         match self {
             Self::Word(wd) => wd.tick_timer(delta),
-            Self::Text(tx) => tx.tick_timer(delta),
         }
     }
 
@@ -70,16 +59,12 @@ impl PendingMark {
             Self::Word(wd) => wd
                 .make_permanent(id)
                 .map(|d| PermanentTrigger::Word(RwSignal::new(d))),
-            Self::Text(tx) => tx
-                .make_permanent(id)
-                .map(|d| PermanentTrigger::Text(RwSignal::new(d))),
         }
     }
 
     fn is_same(&self, node: web_sys::Node, pos: u32) -> bool {
         match self {
             Self::Word(wd) => wd.is_same(node, pos),
-            Self::Text(_) => false,
         }
     }
 }
@@ -130,19 +115,6 @@ pub fn App() -> impl IntoView {
 
     let clear_pointer_up_listener = use_event_listener(use_window(), ev::pointerup, move |_| {
         set_pointer.set(false);
-        if let Some(selection_rng) = web_sys::window()
-            .unwrap()
-            .get_selection()
-            .ok()
-            .flatten()
-            .filter(|s| !s.is_collapsed())
-            .and_then(|s| s.get_range_at(0).ok())
-        {
-            if let Some(new_tx_mark) = TextMark::mount_on_text(selection_rng) {
-                log::debug!("app.rs :: Mounting new TextMark");
-                replace_pending.call(Some(PendingMark::Text(new_tx_mark)));
-            }
-        }
     });
 
     create_effect(move |_| {
@@ -156,7 +128,7 @@ pub fn App() -> impl IntoView {
 
         if let Some(id) = caret.get().and_then(|car| {
             car.offset_node().and_then(|node| {
-                WordPermanentTrigger::id(node.clone()).or_else(|| TextPermanentTrigger::id(node))
+                WordPermanentTrigger::id(node.clone())
             })
         }) {
             log::debug!("app.rs :: Found PermanentTrigger with ID: {:?}", id);
@@ -267,9 +239,6 @@ pub fn App() -> impl IntoView {
                 {match word.0 {
                     PermanentTrigger::Word(wd) => view!{
                         <YaWordPopover word=wd close_cb regenerate_cb/>
-                    }.into_view(),
-                    PermanentTrigger::Text(tx) => view!{
-                        <YaTextPopover text=tx close_cb regenerate_cb/>
                     }.into_view(),
                 }}
             </For>
