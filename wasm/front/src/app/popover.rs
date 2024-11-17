@@ -57,6 +57,10 @@ pub fn YaYaPopover(
     let UseElementBoundingReturn {
         x: mark_x,
         y: mark_y,
+        left: mark_left,
+        right: mark_right,
+        top: mark_top,
+        bottom: mark_bottom,
         width: mark_width,
         height: mark_height,
         ..
@@ -74,12 +78,17 @@ pub fn YaYaPopover(
         height: win_height,
     } = use_window_size();
 
-    let side = create_memo(move |prev| {
-        let top_space = mark_y.get();
-        let bottom_space = win_height.get() - mark_y.get() - mark_height.get();
-        let left_space = mark_x.get();
-        let right_space = win_width.get() - mark_x.get() - mark_width.get();
+    let top_space = move || mark_y.get();
+    let bottom_space =
+        move || win_height.get() - (mark_y.get() - scroll_y.get()) - mark_height.get();
+    let left_space = move || mark_x.get();
+    let right_space = move || win_width.get() - (mark_x.get() - scroll_x.get()) - mark_width.get();
 
+    let side = create_memo(move |prev| {
+        let top_space = top_space();
+        let bottom_space = bottom_space();
+        let left_space = left_space();
+        let right_space = right_space();
         let popover_height = popover_height.get();
         let popover_width = popover_width.get();
 
@@ -148,6 +157,36 @@ pub fn YaYaPopover(
         }
     });
 
+    let content_width = move || {
+        let width_value = win_width.get() * 0.49;
+        let side_value = side.get();
+
+        match side_value {
+            CalloutSide::Top | CalloutSide::Bottom => format!("auto"),
+            CalloutSide::Right | CalloutSide::TopRight | CalloutSide::BottomRight => {
+                format!("{}px", width_value)
+            }
+            CalloutSide::Left | CalloutSide::TopLeft | CalloutSide::BottomLeft => {
+                format!("{}px", width_value)
+            }
+        }
+    };
+
+    let content_height = move || {
+        let height_value = win_height.get() * 0.49;
+        let side_value = side.get();
+
+        match side_value {
+            CalloutSide::Right | CalloutSide::Left => format!("auto"),
+            CalloutSide::Top | CalloutSide::TopLeft | CalloutSide::TopRight => {
+                format!("{}px", height_value)
+            }
+            CalloutSide::Bottom | CalloutSide::BottomLeft | CalloutSide::BottomRight => {
+                format!("{}px", height_value)
+            }
+        }
+    };
+
     let pos_style = create_memo(move |_| {
         let side_value = side.get();
         let mark_x_value = mark_x.get();
@@ -163,58 +202,58 @@ pub fn YaYaPopover(
 
         match side_value {
             CalloutSide::Top => format!(
-                "top: {}px; left: {}px; max-height: {}px;",
+                "top: {}px; left: {}px; max-height: {};",
                 mark_y_value + mark_height_value + scroll_y_value,
                 mark_x_value + mark_width_value / 2.0 + scroll_x_value - popover_width_value / 2.0,
-                win_height_value - mark_y_value - mark_height_value - scroll_y_value
+                content_height()
             ),
             CalloutSide::Left => format!(
-                "top: {}px; left: {}px; max-width: {}px;",
+                "top: {}px; left: {}px; max-width: {};",
                 mark_y_value + mark_height_value / 2.0 + scroll_y_value
                     - popover_height_value / 2.0,
                 mark_x_value + mark_width_value + scroll_x_value,
-                win_width_value - mark_x_value - mark_width_value - scroll_x_value
+                content_width()
             ),
             CalloutSide::Bottom => format!(
-                "top: {}px; left: {}px; max-height: {}px;",
+                "top: {}px; left: {}px; max-height: {};",
                 mark_y_value - popover_height_value + scroll_y_value,
                 mark_x_value + mark_width_value / 2.0 + scroll_x_value - popover_width_value / 2.0,
-                mark_y_value - scroll_y_value
+                content_height()
             ),
             CalloutSide::Right => format!(
-                "top: {}px; left: {}px; max-width: {}px;",
+                "top: {}px; left: {}px; max-width: {};",
                 mark_y_value + mark_height_value / 2.0 + scroll_y_value
                     - popover_height_value / 2.0,
                 mark_x_value - popover_width_value + scroll_x_value,
-                mark_x_value - scroll_x_value
+                content_width()
             ),
             CalloutSide::TopLeft => format!(
-                "top: {}px; left: {}px; max-height: {}px; max-width: {}px;",
+                "top: {}px; left: {}px; max-height: {}; max-width: {};",
                 mark_y_value + mark_height_value + scroll_y_value,
                 mark_x_value + mark_width_value + scroll_x_value,
-                win_height_value - mark_y_value - mark_height_value - scroll_y_value,
-                win_width_value - mark_x_value - mark_width_value - scroll_x_value
+                content_height(),
+                content_width(),
             ),
             CalloutSide::TopRight => format!(
-                "top: {}px; left: {}px; max-height: {}px; max-width: {}px;",
+                "top: {}px; left: {}px; max-height: {}; max-width: {};",
                 mark_y_value + mark_height_value + scroll_y_value,
                 mark_x_value - popover_width_value + scroll_x_value,
-                win_height_value - mark_y_value - mark_height_value - scroll_y_value,
-                mark_x_value - scroll_x_value
+                content_height(),
+                content_width(),
             ),
             CalloutSide::BottomLeft => format!(
-                "top: {}px; left: {}px; max-height: {}px; max-width: {}px;",
+                "top: {}px; left: {}px; max-height: {}; max-width: {};",
                 mark_y_value - popover_height_value + scroll_y_value,
                 mark_x_value + mark_width_value + scroll_x_value,
-                mark_y_value - scroll_y_value,
-                win_width_value - mark_x_value - mark_width_value - scroll_x_value
+                content_height(),
+                content_width()
             ),
             CalloutSide::BottomRight => format!(
-                "top: {}px; left: {}px; max-height: {}px; max-width: {}px;",
+                "top: {}px; left: {}px; max-height: {}; max-width: {};",
                 mark_y_value - popover_height_value + scroll_y_value,
                 mark_x_value - popover_width_value + scroll_x_value,
-                mark_y_value - scroll_y_value,
-                mark_x_value - scroll_x_value
+                content_height(),
+                content_width(),
             ),
         }
     });
@@ -248,7 +287,10 @@ pub fn YaYaPopover(
                 >
                     "×"
                 </button>
-                <div class="ya-ya-content">
+                <div class="ya-ya-content"
+                    style:max-width=content_width
+                    style:max-height=content_height
+                >
                     {children}
                 </div>
             </div>

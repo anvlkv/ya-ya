@@ -29,6 +29,7 @@ pub struct WordPermanentTrigger {
     pub root: Element,
     pub mark: Element,
     pub annotation: Option<String>,
+    pub feedback: bool,
 }
 
 impl WordMark {
@@ -219,6 +220,7 @@ impl WordMark {
             word_pos: self.word_pos,
             root: self.root.clone(),
             annotation: None,
+            feedback: false,
         })
     }
 }

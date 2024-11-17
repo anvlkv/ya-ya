@@ -24,7 +24,7 @@ pub fn Loading() -> impl IntoView {
                 />
             </svg>
             <figcaption>
-                Перевожу на Ясный Язык...
+                Пояснение сейчас создаётся...
             </figcaption>
         </figure>
     }

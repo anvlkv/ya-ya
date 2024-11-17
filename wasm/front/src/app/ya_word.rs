@@ -42,7 +42,12 @@ pub fn YaWordPopover(
                     <Loading/>
                 }}
             >
-                <div style:display="contents" inner_html=content/>
+                <div style:display="contents" inner_html=content />
+                <div class="ya-ya-water-mark">
+                    <hr/>
+                    <p>Ответ создан языковой моделью и может содержать ошибки.</p>
+                    <hr/>
+                </div>
                 <div class="ya-ya-footer">
                     <button
                         class="ya-ya-button"

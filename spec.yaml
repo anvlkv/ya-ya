@@ -1,0 +1,19 @@
+openapi: 3.0.0
+info:
+  title: Ya-Ya API
+  version: 1.0.0
+paths:
+  /translate-word:
+    post:
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4e9bhr5t4f10s4lf5qk
+        service_account_id: ajev4r1vmdeafkelk2g8
+      operationId: translate-word
+  /success-record:
+    post:
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4e1riur0ki6mukohhhg
+        service_account_id: ajev4r1vmdeafkelk2g8
+      operationId: success-record

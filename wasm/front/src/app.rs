@@ -17,7 +17,7 @@ use word::{WordMark, WordPermanentTrigger};
 use ya_word::YaWordPopover;
 
 pub const BEFORE_TRIGGER_TIMER: f64 = 200.0;
-pub const TRIGGER_ANIMATED_TIMER: f64 = 1600.0;
+pub const TRIGGER_ANIMATED_TIMER: f64 = 1800.0;
 pub const MARK_ROOT_ATTRIBUTE: &str = "data-ya-ya-mark-root";
 pub const TRIGGER_ATTRIBUTE_WORD: &str = "data-ya-ya-trigger-word";
 pub const PENDING_ATTRIBUTE_WORD: &str = "data-ya-ya-pending-word";
@@ -32,6 +32,54 @@ impl PermanentTrigger {
     fn unmount(&self) -> Result<(), wasm_bindgen::JsValue> {
         match self {
             Self::Word(wd) => wd.get_untracked().unmount(),
+        }
+    }
+
+    fn word(&self) -> String {
+        match self {
+            Self::Word(wd) => wd
+                .get_untracked()
+                .mark
+                .text_content()
+                .unwrap_or_default()
+                .trim()
+                .to_string(),
+        }
+    }
+
+    fn context(&self) -> String {
+        match self {
+            Self::Word(wd) => wd
+                .get_untracked()
+                .root
+                .parent_element()
+                .map(|par| par.text_content())
+                .flatten()
+                .unwrap_or_default(),
+        }
+    }
+
+    fn annotate(&self, value: Option<String>) {
+        match self {
+            Self::Word(wd) => wd.update(|wd| wd.annotation = value),
+        }
+    }
+
+    fn annotation(&self) -> Option<String> {
+        match self {
+            Self::Word(wd) => wd.get_untracked().annotation.clone(),
+        }
+    }
+
+    fn feedback(&self, val: bool) {
+        match self {
+            Self::Word(wd) => wd.update_untracked(|wd| wd.feedback = val),
+        }
+    }
+
+    fn skip_feedback(&self) -> bool {
+        match self {
+            Self::Word(wd) => wd.get_untracked().feedback,
         }
     }
 }
@@ -69,18 +117,84 @@ impl PendingMark {
     }
 }
 
+async fn translate_word(word: String, context: String, previous: Option<String>) -> String {
+    let client = reqwest::Client::new();
+
+    let body = json::object! {
+        word: word,
+        context: context,
+        previous: previous
+    };
+
+    client
+        .post(format!("{}/translate-word", crate::env::EXTENSION_TRANSLATE_URL).as_str())
+        .body(json::stringify(body))
+        .send()
+        .await
+        .unwrap()
+        .text()
+        .await
+        .unwrap()
+}
+
+async fn success_record(word: String, context: String, translation: String, result: bool) {
+    let client = reqwest::Client::new();
+
+    let body = json::object! {
+        word: word,
+        context: context,
+        translation: translation,
+        result: result
+    };
+
+    client
+        .post(format!("{}/success-record", crate::env::EXTENSION_TRANSLATE_URL).as_str())
+        .body(json::stringify(body))
+        .send()
+        .await
+        .unwrap();
+}
+
 #[component]
 pub fn App() -> impl IntoView {
     let extension_root = create_node_ref::<html::Div>();
 
     let (data, set_data) = create_signal(HashMap::<Uuid, PermanentTrigger>::new());
-    let (show_ya, set_show_ya) = create_signal(BTreeSet::<Uuid>::new());
+    let (show_ya, set_show_ya) = create_signal(Vec::<Uuid>::new());
 
     let (pending_mark, set_pending_mark) = create_signal(Option::<PendingMark>::None);
 
     let (caret, set_caret) = create_signal(Option::<CaretPosition>::None);
     let caret = signal_debounced(caret, BEFORE_TRIGGER_TIMER);
     let (pointer, set_pointer) = create_signal(false);
+
+    let translate_action = create_action(
+        |(id, ctx, word, prev): &(Uuid, String, String, Option<String>)| {
+            let ctx = ctx.clone();
+            let word = word.clone();
+            let prev = prev.clone();
+            let id = *id;
+
+            async move {
+                let translation = translate_word(word, ctx, prev).await;
+
+                (id, translation)
+            }
+        },
+    );
+
+    let success_record_action = create_action(
+        |(word, ctx, annotation, result): &(String, String, String, bool)| {
+            let ctx = ctx.clone();
+            let word = word.clone();
+            let annotation = annotation.clone();
+            let result = *result;
+
+            async move {
+                success_record(word, ctx, annotation, result).await;
+            }
+        },
+    );
 
     let replace_pending = Callback::new(move |mark: Option<PendingMark>| {
         set_pending_mark.update(|c| {
@@ -127,13 +241,14 @@ pub fn App() -> impl IntoView {
             .unwrap_or(true);
 
         if let Some(id) = caret.get().and_then(|car| {
-            car.offset_node().and_then(|node| {
-                WordPermanentTrigger::id(node.clone())
-            })
+            car.offset_node()
+                .and_then(|node| WordPermanentTrigger::id(node.clone()))
         }) {
             log::debug!("app.rs :: Found PermanentTrigger with ID: {:?}", id);
             set_show_ya.update(|d| {
-                _ = d.insert(id);
+                if !d.contains(&id) {
+                    d.push(id);
+                }
             });
         } else if let Some(new_wd_mark) = caret.get().filter(|_| no_selection).and_then(|car| {
             car.offset_node()
@@ -168,6 +283,7 @@ pub fn App() -> impl IntoView {
                     let id = Uuid::new_v4();
                     let permanent = wd.make_permanent(id).unwrap();
                     *set_pending_mark = None;
+                    translate_action.dispatch((id, permanent.word(), permanent.context(), None));
                     set_data.update(|set_data| {
                         log::debug!(
                             "app.rs :: Inserting permanent WordMark into data with ID: {:?}",
@@ -175,9 +291,11 @@ pub fn App() -> impl IntoView {
                         );
                         _ = set_data.insert(id, permanent);
                     });
-                    set_show_ya.update(|set_show_ya| {
+                    set_show_ya.update(|d| {
                         log::debug!("app.rs :: Inserting ID into show_ya: {:?}", id);
-                        _ = set_show_ya.insert(id);
+                        if !d.contains(&id) {
+                            d.push(id);
+                        }
                     });
                 }
             });
@@ -212,10 +330,35 @@ pub fn App() -> impl IntoView {
             .collect::<Vec<_>>()
     });
 
+    let translate_value = translate_action.value();
+    create_effect(move |_| {
+        if let Some((id, translation)) = translate_value.get() {
+            let data = data.get_untracked();
+            if let Some(wd) = data.get(&id) {
+                wd.annotate(Some(translation));
+            } else {
+                log::error!("no entry for translation id {id}");
+            }
+        }
+    });
+
     let close_cb = Callback::new(move |(id, quality): (Uuid, Option<bool>)| {
         set_show_ya.update(|s| {
-            _ = s.remove(&id);
+            _ = s.retain(|v| v != &id);
         });
+
+        if let Some(good) = quality.as_ref() {
+            let data = data.get_untracked();
+            let wd = data.get(&id).unwrap();
+            if !wd.skip_feedback() {
+                let word = wd.word();
+                let context = wd.context();
+                let annotation = wd.annotation().unwrap();
+
+                success_record_action.dispatch((word, context, annotation, *good));
+                wd.feedback(true);
+            }
+        }
 
         if quality.is_none() || quality == Some(false) {
             set_data.update(|d| {
@@ -224,11 +367,21 @@ pub fn App() -> impl IntoView {
                 _ = d.remove(&id);
             });
         }
-
-        if let Some(good) = quality {}
     });
 
-    let regenerate_cb = Callback::new(move |_id: Uuid| {});
+    let regenerate_cb = Callback::new(move |id: Uuid| {
+        let data = data.get();
+        let entry = data.get(&id).unwrap();
+        entry.feedback(false);
+        let word = entry.word();
+        let context = entry.context();
+        let annotation = entry.annotation();
+        translate_action.dispatch((id, word.clone(), context.clone(), annotation.clone()));
+        entry.annotate(None);
+        if let Some(annotation) = annotation {
+            success_record_action.dispatch((word, context, annotation, false));
+        }
+    });
 
     view! {
         <div node_ref=extension_root>

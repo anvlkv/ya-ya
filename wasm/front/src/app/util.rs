@@ -1,9 +1,7 @@
 use wasm_bindgen::JsCast;
 use web_sys::{Element, Node};
 
-use super::{
-    PENDING_ATTRIBUTE_WORD, TRIGGER_ATTRIBUTE_WORD,
-};
+use super::{PENDING_ATTRIBUTE_WORD, TRIGGER_ATTRIBUTE_WORD};
 
 pub fn words_map(text: &str) -> Vec<(usize, usize, String)> {
     text.chars()

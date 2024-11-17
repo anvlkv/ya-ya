@@ -37,3 +37,8 @@ uuid = { version = "1.11.0", features = ["v4"] }
 markdown = "1.0.0-alpha.21"
 wasm-bindgen-futures = "0.4.45"
 cfg-if = { workspace = true }
+reqwest = "0.12.9"
+json = "0.12.4"
+
+[build-dependencies]
+dotenv = "0.15.0"

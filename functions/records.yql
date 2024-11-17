@@ -1,0 +1,8 @@
+CREATE TABLE records (
+    id Serial,
+    word String,
+    context String,
+    translation String,
+    result Bool,
+    PRIMARY KEY ( id ),
+);
