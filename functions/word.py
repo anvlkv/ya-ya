@@ -78,18 +78,18 @@ async def handler(event, context):
     model = sdk.models.completions('yandexgpt-lite', model_version='rc')
     model = model.configure(temperature=0.5).langchain(model_type="chat", timeout=context.get_remaining_time_in_millis())
 
-    # langchain_result = await model.ainvoke([
-    #     SystemMessage(content=prompts['system']['word']['goal']),
-    #     SystemMessage(content=prompts['system']['rules']),
-    #     SystemMessage(content=prompts['system']['word']['template']),
-    #     SystemMessage(content=prompts['system']['word']['interlude']),
-    #     *example_prompts(),
-    #     HumanMessage(content=prompts['user']['word']['prompt']),
-    #     HumanMessage(content=translate_prompt),
-    #     *maybe_previous(translate_previous)
-    # ])
+    langchain_result = await model.ainvoke([
+        SystemMessage(content=prompts['system']['word']['goal']),
+        SystemMessage(content=prompts['system']['rules']),
+        SystemMessage(content=prompts['system']['word']['template']),
+        SystemMessage(content=prompts['system']['word']['interlude']),
+        *example_prompts(),
+        HumanMessage(content=prompts['user']['word']['prompt']),
+        HumanMessage(content=translate_prompt),
+        *maybe_previous(translate_previous)
+    ])
 
-    # logging.info("{} tokens used".format(langchain_result))
+    logging.info("{} tokens used".format(langchain_result))
 
     return {
         'statusCode': 200,
@@ -98,6 +98,6 @@ async def handler(event, context):
             'Access-Control-Allow-Origin': '*'
         },
         'isBase64Encoded': False,
-        'body': "# Dummy"
-        # 'body': langchain_result.content
+        # 'body': "# Dummy"
+        'body': langchain_result.content
     }
