@@ -26,7 +26,6 @@
   },
   "author": "a.nvlkv",
   "content_security_policy": {
-    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com/ajax/libs/animate.css; style-src-elem 'self' 'unsafe-inline' https://cdnjs.cloudflare.com/ajax/libs/animate.css; default-src 'self'; connect-src 'self' $APP_TRANSLATE_URL",
-    "sandbox": ""
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline'; default-src 'self'; connect-src 'self' $EXTENSION_PUBLIC_TRANSLATE_URL"
   }
 }

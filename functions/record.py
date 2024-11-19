@@ -1,51 +1,17 @@
 import yandexcloud
 import logging
 import tomlkit
-import os
 import json
 import base64
+import os
 import ydb
 import ydb.iam
+import db_conn
 
 
 logging.getLogger().setLevel(logging.DEBUG)
 
-driver = ydb.Driver(
-    endpoint=os.environ['YDB_ENDPOINT'],
-    database=os.environ['YDB_DATABASE'],
-    credentials=ydb.iam.MetadataUrlCredentials(),
-)
-
-driver.wait(fail_fast=True, timeout=5)
-
-
-pool = ydb.SessionPool(driver)
-
-def store_word_record(session, word, context, translation, result):
-    params = {
-        "$word": (word, ydb.PrimitiveType.String),
-        "$context": (context, ydb.PrimitiveType.String),
-        "$translation": (translation, ydb.PrimitiveType.String),
-        "$result": (result, ydb.PrimitiveType.Bool),
-    }
-
-    return session.transaction().execute(
-        """
-        DECLARE $word AS String;
-        DECLARE $context AS String;
-        DECLARE $translation AS String;
-        DECLARE $result AS Bool;
-
-        REPLACE INTO records ( word, context, translation, result )
-            VALUES ( $word, $context, $translation, $result );
-        """,
-        parameters = params,
-        commit_tx=True,
-        settings=ydb.BaseRequestSettings()
-    )
-
-
-def handler(event, context):
+async def handler(event, context):
     data = None
     if event['isBase64Encoded']:
         data = base64.b64decode(event['body'])
@@ -56,15 +22,32 @@ def handler(event, context):
 
     logging.debug(body)
 
-    word = body['word']
-    ctx = body['context']
-    translation = body['translation']
+    id = body['id']
     result = body['result']
 
-    pool.retry_operation_sync(store_word_record, word=word, context=ctx, translation=translation, result=result)
+    pool = await db_conn.conn_pool()
 
+    await pool.execute_with_retries(
+        """
+        DECLARE $id AS Int64;
+        DECLARE $result AS Bool;
+
+        UPDATE records
+            SET result = $result
+        WHERE id = $id;
+        """,
+        {
+            "$id": id,
+            "$result": result,
+        }
+    )
+
+    await pool.stop()
 
     return {
         'statusCode': 200,
+        'headers': {
+            'Access-Control-Allow-Origin': '*'
+        },
         'body': True,
     }

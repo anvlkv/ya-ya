@@ -1,20 +1,27 @@
+mod annotation;
+mod error;
 mod loading;
+mod mark;
 mod popover;
 mod util;
 mod word;
 mod ya_word;
 
-use std::collections::{BTreeSet, HashMap};
+use std::collections::HashMap;
 
+use annotation::{annotate_word, success_record};
 use leptos::*;
 use leptos_use::{
-    signal_debounced, use_event_listener, use_raf_fn, use_window, UseRafFnCallbackArgs,
+    signal_debounced, use_document, use_event_listener, use_raf_fn, use_window,
+    UseRafFnCallbackArgs,
 };
+use mark::{PendingMark, PermanentTrigger};
 use uuid::Uuid;
-use wasm_bindgen::JsValue;
 use web_sys::CaretPosition;
 use word::{WordMark, WordPermanentTrigger};
 use ya_word::YaWordPopover;
+
+use super::MOUNT;
 
 pub const BEFORE_TRIGGER_TIMER: f64 = 200.0;
 pub const TRIGGER_ANIMATED_TIMER: f64 = 1800.0;
@@ -23,137 +30,8 @@ pub const TRIGGER_ATTRIBUTE_WORD: &str = "data-ya-ya-trigger-word";
 pub const PENDING_ATTRIBUTE_WORD: &str = "data-ya-ya-pending-word";
 pub const BRAND_COLOR: [u8; 3] = [239, 207, 227];
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum PermanentTrigger {
-    Word(RwSignal<WordPermanentTrigger>),
-}
-
-impl PermanentTrigger {
-    fn unmount(&self) -> Result<(), wasm_bindgen::JsValue> {
-        match self {
-            Self::Word(wd) => wd.get_untracked().unmount(),
-        }
-    }
-
-    fn word(&self) -> String {
-        match self {
-            Self::Word(wd) => wd
-                .get_untracked()
-                .mark
-                .text_content()
-                .unwrap_or_default()
-                .trim()
-                .to_string(),
-        }
-    }
-
-    fn context(&self) -> String {
-        match self {
-            Self::Word(wd) => wd
-                .get_untracked()
-                .root
-                .parent_element()
-                .map(|par| par.text_content())
-                .flatten()
-                .unwrap_or_default(),
-        }
-    }
-
-    fn annotate(&self, value: Option<String>) {
-        match self {
-            Self::Word(wd) => wd.update(|wd| wd.annotation = value),
-        }
-    }
-
-    fn annotation(&self) -> Option<String> {
-        match self {
-            Self::Word(wd) => wd.get_untracked().annotation.clone(),
-        }
-    }
-
-    fn feedback(&self, val: bool) {
-        match self {
-            Self::Word(wd) => wd.update_untracked(|wd| wd.feedback = val),
-        }
-    }
-
-    fn skip_feedback(&self) -> bool {
-        match self {
-            Self::Word(wd) => wd.get_untracked().feedback,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-enum PendingMark {
-    Word(WordMark),
-}
-
-impl PendingMark {
-    fn unmount(&self) -> Result<(), wasm_bindgen::JsValue> {
-        match self {
-            Self::Word(wd) => wd.unmount(),
-        }
-    }
-
-    fn tick_timer(&mut self, delta: f64) -> bool {
-        match self {
-            Self::Word(wd) => wd.tick_timer(delta),
-        }
-    }
-
-    fn make_permanent(&self, id: Uuid) -> Result<PermanentTrigger, JsValue> {
-        match self {
-            Self::Word(wd) => wd
-                .make_permanent(id)
-                .map(|d| PermanentTrigger::Word(RwSignal::new(d))),
-        }
-    }
-
-    fn is_same(&self, node: web_sys::Node, pos: u32) -> bool {
-        match self {
-            Self::Word(wd) => wd.is_same(node, pos),
-        }
-    }
-}
-
-async fn translate_word(word: String, context: String, previous: Option<String>) -> String {
-    let client = reqwest::Client::new();
-
-    let body = json::object! {
-        word: word,
-        context: context,
-        previous: previous
-    };
-
-    client
-        .post(format!("{}/translate-word", crate::env::EXTENSION_TRANSLATE_URL).as_str())
-        .body(json::stringify(body))
-        .send()
-        .await
-        .unwrap()
-        .text()
-        .await
-        .unwrap()
-}
-
-async fn success_record(word: String, context: String, translation: String, result: bool) {
-    let client = reqwest::Client::new();
-
-    let body = json::object! {
-        word: word,
-        context: context,
-        translation: translation,
-        result: result
-    };
-
-    client
-        .post(format!("{}/success-record", crate::env::EXTENSION_TRANSLATE_URL).as_str())
-        .body(json::stringify(body))
-        .send()
-        .await
-        .unwrap();
-}
+const STYLE: &str = include_str!("../../../style.css");
+const ANIMATE_STYLE: &str = include_str!("../../../node_modules/animate.css/animate.min.css");
 
 #[component]
 pub fn App() -> impl IntoView {
@@ -168,33 +46,28 @@ pub fn App() -> impl IntoView {
     let caret = signal_debounced(caret, BEFORE_TRIGGER_TIMER);
     let (pointer, set_pointer) = create_signal(false);
 
-    let translate_action = create_action(
-        |(id, ctx, word, prev): &(Uuid, String, String, Option<String>)| {
+    let annotate_action = create_action(
+        |(id, word, ctx, prev): &(Uuid, String, String, Option<String>)| {
             let ctx = ctx.clone();
             let word = word.clone();
             let prev = prev.clone();
             let id = *id;
 
             async move {
-                let translation = translate_word(word, ctx, prev).await;
+                let res = annotate_word(word, ctx, prev).await;
 
-                (id, translation)
+                (id, res)
             }
         },
     );
 
-    let success_record_action = create_action(
-        |(word, ctx, annotation, result): &(String, String, String, bool)| {
-            let ctx = ctx.clone();
-            let word = word.clone();
-            let annotation = annotation.clone();
-            let result = *result;
-
-            async move {
-                success_record(word, ctx, annotation, result).await;
-            }
-        },
-    );
+    let success_record_action = create_action(|(id, result): &(u32, bool)| {
+        let id = *id;
+        let result = *result;
+        async move {
+            _ = success_record(id, result).await;
+        }
+    });
 
     let replace_pending = Callback::new(move |mark: Option<PendingMark>| {
         set_pending_mark.update(|c| {
@@ -283,7 +156,7 @@ pub fn App() -> impl IntoView {
                     let id = Uuid::new_v4();
                     let permanent = wd.make_permanent(id).unwrap();
                     *set_pending_mark = None;
-                    translate_action.dispatch((id, permanent.word(), permanent.context(), None));
+                    annotate_action.dispatch((id, permanent.content(), permanent.context(), None));
                     set_data.update(|set_data| {
                         log::debug!(
                             "app.rs :: Inserting permanent WordMark into data with ID: {:?}",
@@ -330,12 +203,12 @@ pub fn App() -> impl IntoView {
             .collect::<Vec<_>>()
     });
 
-    let translate_value = translate_action.value();
-    create_effect(move |_| {
-        if let Some((id, translation)) = translate_value.get() {
+    let translate_value = annotate_action.value();
+    create_render_effect(move |_| {
+        if let Some((id, annotation)) = translate_value.get() {
             let data = data.get_untracked();
             if let Some(wd) = data.get(&id) {
-                wd.annotate(Some(translation));
+                wd.annotate(Some(annotation));
             } else {
                 log::error!("no entry for translation id {id}");
             }
@@ -351,11 +224,9 @@ pub fn App() -> impl IntoView {
             let data = data.get_untracked();
             let wd = data.get(&id).unwrap();
             if !wd.skip_feedback() {
-                let word = wd.word();
-                let context = wd.context();
-                let annotation = wd.annotation().unwrap();
+                let annotation = wd.annotation().unwrap().unwrap();
 
-                success_record_action.dispatch((word, context, annotation, *good));
+                success_record_action.dispatch((annotation.id, *good));
                 wd.feedback(true);
             }
         }
@@ -373,28 +244,45 @@ pub fn App() -> impl IntoView {
         let data = data.get();
         let entry = data.get(&id).unwrap();
         entry.feedback(false);
-        let word = entry.word();
+        let word = entry.content();
         let context = entry.context();
-        let annotation = entry.annotation();
-        translate_action.dispatch((id, word.clone(), context.clone(), annotation.clone()));
+        let annotation = entry.annotation().map(|a| a.ok()).flatten();
+        annotate_action.dispatch((
+            id,
+            word.clone(),
+            context.clone(),
+            annotation.as_ref().map(|a| a.annotation.clone()),
+        ));
         entry.annotate(None);
         if let Some(annotation) = annotation {
-            success_record_action.dispatch((word, context, annotation, false));
+            success_record_action.dispatch((annotation.id, false));
         }
     });
 
+    let mount = use_document()
+        .as_ref()
+        .map(|d| d.query_selector(format!("#{MOUNT}").as_str()).ok())
+        .flatten()
+        .flatten()
+        .unwrap();
+
     view! {
-        <div node_ref=extension_root>
-            <For each=move || visible_annotations.get()
-                key=|wd| wd.1
-                let:word
-            >
-                {match word.0 {
-                    PermanentTrigger::Word(wd) => view!{
-                        <YaWordPopover word=wd close_cb regenerate_cb/>
-                    }.into_view(),
-                }}
-            </For>
-        </div>
+        <Portal use_shadow=true mount=mount>
+            <style inner_html={ANIMATE_STYLE}/>
+            <style inner_html={STYLE}/>
+
+            <div id="ya-ya-extension-root" node_ref=extension_root>
+                <For each=move || visible_annotations.get()
+                    key=|wd| wd.1
+                    let:word
+                >
+                    {match word.0 {
+                        PermanentTrigger::Word(wd) => view!{
+                            <YaWordPopover word=wd close_cb regenerate_cb/>
+                        }.into_view(),
+                    }}
+                </For>
+            </div>
+        </Portal>
     }
 }

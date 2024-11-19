@@ -1,8 +1,8 @@
 CREATE TABLE records (
     id Serial,
-    word String,
-    context String,
-    translation String,
+    word Utf8 NOT NULL,
+    context Utf8 NOT NULL,
+    annotation Utf8 NOT NULL,
     result Bool,
     PRIMARY KEY ( id ),
 );

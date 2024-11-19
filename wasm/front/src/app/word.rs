@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
 use super::{
-    util::*, BRAND_COLOR, MARK_ROOT_ATTRIBUTE, PENDING_ATTRIBUTE_WORD, TRIGGER_ANIMATED_TIMER,
-    TRIGGER_ATTRIBUTE_WORD,
+    annotation::Annotation, error::YaYaError, util::*, BRAND_COLOR, MARK_ROOT_ATTRIBUTE,
+    PENDING_ATTRIBUTE_WORD, TRIGGER_ANIMATED_TIMER, TRIGGER_ATTRIBUTE_WORD,
 };
 
 use leptos::document;
@@ -28,7 +28,8 @@ pub struct WordPermanentTrigger {
     pub word_pos: usize,
     pub root: Element,
     pub mark: Element,
-    pub annotation: Option<String>,
+    pub anchors: (Element, Element),
+    pub annotation: Option<Result<Annotation, YaYaError>>,
     pub feedback: bool,
 }
 
@@ -204,28 +205,37 @@ impl WordMark {
         self.time += delta;
         self.time >= TRIGGER_ANIMATED_TIMER
     }
+}
 
-    pub fn make_permanent(&self, id: Uuid) -> Result<WordPermanentTrigger, JsValue> {
-        let mark = self.mark.clone();
+impl WordPermanentTrigger {
+    pub fn make_permanent(pending: &WordMark, id: Uuid) -> Result<WordPermanentTrigger, JsValue> {
+        let mark = pending.mark.clone();
 
         mark.remove_attribute(PENDING_ATTRIBUTE_WORD)?;
         mark.set_attribute(TRIGGER_ATTRIBUTE_WORD, id.to_string().as_str())?;
         mark.set_attribute("id", format!("mark-{id}").as_str())?;
 
+        let anchor_before = document().create_element("span")?;
+        anchor_before.set_attribute("class", "ya-ya-anchor")?;
+        mark.prepend_with_node_1(&anchor_before.clone().into())?;
+
+        let anchor_after = document().create_element("span")?;
+        anchor_after.set_attribute("class", "ya-ya-anchor")?;
+        mark.append_with_node_1(&anchor_after.clone().into())?;
+
         Ok(WordPermanentTrigger {
             mark,
             id,
-            start: self.start,
-            end: self.end,
-            word_pos: self.word_pos,
-            root: self.root.clone(),
+            anchors: (anchor_before, anchor_after),
+            start: pending.start,
+            end: pending.end,
+            word_pos: pending.word_pos,
+            root: pending.root.clone(),
             annotation: None,
             feedback: false,
         })
     }
-}
 
-impl WordPermanentTrigger {
     pub fn unmount(&self) -> Result<(), JsValue> {
         log::debug!("word.rs :: Fetching text content from the root element");
         let text = self
@@ -273,5 +283,43 @@ impl WordPermanentTrigger {
         }
 
         None
+    }
+
+    pub fn word(&self) -> String {
+        self.mark
+            .text_content()
+            .unwrap_or_default()
+            .trim()
+            .to_string()
+    }
+
+    pub fn context(&self) -> String {
+        let mut current_node: Node = self.root.clone().into();
+        let word = self.word();
+
+        while let Some(element) = current_node.parent_node() {
+            if let Some(parent_text) = element.text_content() {
+                let parent_text_without_spaces: String = parent_text.split_whitespace().collect();
+                if parent_text_without_spaces.contains(&word) {
+                    let words: Vec<&str> = parent_text.split_whitespace().collect();
+                    if let Some(word_pos) = words.iter().position(|&w| w == word) {
+                        let start = word_pos.saturating_sub(3);
+                        let end = (word_pos + 4).min(words.len());
+                        return words[start..end].join(" ");
+                    }
+                }
+            }
+            current_node = element;
+        }
+
+        // Fallback to the original root if no parent contains the word
+        let text = self.root.text_content().unwrap_or_default();
+        let words: Vec<&str> = text.split_whitespace().collect();
+        let word_pos = words.iter().position(|&w| w == word).unwrap_or(0);
+
+        let start = word_pos.saturating_sub(3);
+        let end = (word_pos + 4).min(words.len());
+
+        words[start..end].join(" ")
     }
 }

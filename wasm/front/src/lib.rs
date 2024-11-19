@@ -6,7 +6,7 @@ use leptos::*;
 use wasm_bindgen::prelude::*;
 use web_sys::HtmlElement;
 
-const MOUNT: &str = "ya-ya-exetension-mount";
+pub const MOUNT: &str = "ya-ya-exetension-mount";
 
 #[wasm_bindgen]
 pub fn main() {
@@ -19,22 +19,28 @@ pub fn main() {
     });
     console_error_panic_hook::set_once();
     log::info!("init log content");
-    mount_app()
+    mount_app().expect("mount app")
 }
 
-fn mount_app() {
+fn mount_app() -> Result<(), JsValue> {
     let doc = web_sys::window()
         .and_then(|w| w.document())
-        .expect("document");
-    let el = doc.create_element("div").expect("create app mount");
-    el.set_id(MOUNT);
-    let bod = doc.body().expect("body");
-    bod.append_with_node_1(&el.clone().into())
-        .expect("append app mount");
+        .ok_or_else(|| JsValue::from_str("document or winodw"))?;
 
-    let ht_el = el.dyn_ref::<HtmlElement>().cloned().unwrap();
+    let app_el = doc.create_element("div")?;
+    app_el.set_id(MOUNT);
+
+    let bod = doc.body().expect("body");
+    bod.append_with_node_1(&app_el.clone().into())?;
+
+    let ht_el = app_el
+        .dyn_ref::<HtmlElement>()
+        .cloned()
+        .ok_or_else(|| JsValue::from_str("app element ref"))?;
 
     mount_to(ht_el, app::App);
+
+    Ok(())
 }
 
 #[wasm_bindgen]
