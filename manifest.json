@@ -2,8 +2,8 @@
   "$schema": "https://json.schemastore.org/chrome-manifest.json",
   "manifest_version": 3,
   "version": "0.0.1",
-  "name": "ya-ya",
-  "description": "An Extension.js example.",
+  "name": "ЯЯ",
+  "description": "Пояснение текста на Ясном Языке.",
   "icons": {
     "48": "images/extension_48.png"
   },
@@ -24,8 +24,10 @@
     "default_title": "ЯЯ",
     "default_popup": "./action/index.html"
   },
+  "options_page": "./options/index.html",
+  "offline_enabled": false,
   "author": "a.nvlkv",
   "content_security_policy": {
-    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline'; default-src 'self'; connect-src 'self' $EXTENSION_PUBLIC_TRANSLATE_URL"
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline'; default-src 'self'; connect-src 'self' $EXTENSION_PUBLIC_TRANSLATE_URL ws://127.0.0.1:8080/ws;"
   }
 }

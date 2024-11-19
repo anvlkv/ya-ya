@@ -11,19 +11,15 @@ cargo install cargo-watch
 ```
 
 ```
-cargo install cargo-leptos
-```
-
-```
 wasm-pack build wasm/front
 ```
 
 ```
-wasm-pack build wasm/background
+wasm-pack build wasm/popup
 ```
 
 ```
-wasm-pack build wasm/popup
+wasm-pack build wasm/options
 ```
 
 ### Development
@@ -32,7 +28,7 @@ wasm-pack build wasm/popup
 cargo watch \
 -i "**/pkg/" \
 -i "**/env.rs" \
--s "wasm-pack build wasm/front && wasm-pack build wasm/background && wasm-pack build wasm/popup && npm run dev"
+-s "wasm-pack build wasm/front --debug && wasm-pack build wasm/options && wasm-pack build wasm/popup && npm run dev"
 ```
 
 
@@ -67,7 +63,7 @@ yc serverless function version create --function-name=success-record \
 
 ```
 wasm-pack build wasm/front --release
-wasm-pack build wasm/background --release
+wasm-pack build wasm/options --release
 wasm-pack build wasm/popup --release
 npm run build
 ```

@@ -1,18 +1,17 @@
 {
   "private": true,
   "name": "ya-ya",
-  "description": "An Extension.js example.",
+  "description": "Пояснение текста на Ясном Языке.",
   "version": "0.0.1",
   "type": "module",
   "author": {
-    "name": "Your Name",
-    "email": "your@email.com",
-    "url": "https://yourwebsite.com"
+    "name": "Aleksandr Novlokov",
+    "email": "alexander.novolokov@ya.ru"
   },
   "scripts": {
     "dev": "extension dev",
     "start": "extension start",
-    "build": "extension build"
+    "build": "extension build --browser=chrome && extension build --browser=edge && extension build --browser=firefox"
   },
   "devDependencies": {
     "extension": "2.0.0-beta.2"

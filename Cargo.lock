@@ -2681,14 +2681,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a5cbf750400958819fb6178eaa83bee5cd9c29a26a40cc241df8c70fdd46984"
 
 [[package]]
-name = "ya-ya-background"
-version = "0.1.0"
-dependencies = [
- "wasm-bindgen",
- "web-sys",
-]
-
-[[package]]
 name = "ya-ya-front"
 version = "0.1.0"
 dependencies = [
@@ -2713,7 +2705,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ya-ya-popup"
+name = "ya-ya-options"
 version = "0.1.0"
 dependencies = [
  "console_error_panic_hook",
@@ -2721,6 +2713,19 @@ dependencies = [
  "leptos",
  "log",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "ya-ya-popup"
+version = "0.1.0"
+dependencies = [
+ "console_error_panic_hook",
+ "console_log",
+ "js-sys",
+ "leptos",
+ "log",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
 ]
 
 [[package]]

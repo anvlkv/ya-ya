@@ -1,7 +1,27 @@
-#ya-ya-extension-root {
+body {
+    margin: 0;
+}
+
+#ya-ya-extension-root,
+.ya-ya-action {
     font-family: Helvetica, Arial, sans-serif;
-    font-size: 18pt;
+    font-size: 16.5pt;
     line-height: 1.5em;
+}
+
+.ya-ya-action,
+.ya-ya-popover {
+    background-color: #fafafa;
+    color: #050505 !important;
+    padding: 1.75em;
+}
+
+@media (prefers-color-scheme: dark) {
+    .ya-ya-popover,
+    .ya-ya-action {
+        background-color: #050505;
+        color: #fafafa !important;
+    }
 }
 
 .ya-ya-popover {
@@ -11,19 +31,9 @@
     max-height: 100dvh;
     max-width: 100dvw;
     overflow: visible;
-    background-color: #fafafa;
-    color: #050505 !important;
     border-radius: 1em;
-    padding: 1.75em;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     word-break: initial;
-}
-
-@media (prefers-color-scheme: dark) {
-    .ya-ya-popover {
-        background-color: #050505;
-        color: #fafafa !important;
-    }
 }
 
 .ya-ya-popover-inner {

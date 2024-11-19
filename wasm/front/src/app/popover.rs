@@ -212,7 +212,7 @@ win_height: {win_height}
                 mark_y - popover_height + scroll_y
             }
             CalloutSide::Left | CalloutSide::Right => {
-                mark_y - mark_height / 2.0 + scroll_y - popover_height / 2.0
+                mark_y + mark_height / 2.0 + scroll_y - popover_height / 2.0
             }
         };
 

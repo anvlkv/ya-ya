@@ -14,9 +14,3 @@ pub fn main() {
 fn mount_app() {
     mount_to_body(app::App);
 }
-
-#[wasm_bindgen(module = "/src/lib.js")]
-extern "C" {
-    #[wasm_bindgen(js_name = "sendMessage")]
-    pub async fn send_message(msg: JsValue) -> JsValue;
-}

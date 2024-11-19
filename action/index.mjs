@@ -1,8 +1,4 @@
 import "../wasm/popup/pkg/ya_ya_popup.js";
-import "./styles.css";
+import "../style.css";
 
 console.debug("loaded popup scripts and styles");
-
-export async function sendMessage(message) {
-  return await browser.runtime.sendMessage(message);
-}

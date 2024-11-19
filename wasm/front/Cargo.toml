@@ -35,7 +35,7 @@ leptos-use = { version = "0.13.8" }
 js-sys = "0.3.72"
 uuid = { version = "1.11.0", features = ["v4"] }
 markdown = "1.0.0-alpha.21"
-wasm-bindgen-futures = "0.4.45"
+wasm-bindgen-futures = { workspace = true }
 cfg-if = { workspace = true }
 reqwest = { version = "0.12.9", features = ["json"] }
 json = "0.12.4"

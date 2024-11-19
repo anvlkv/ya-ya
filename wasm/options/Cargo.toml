@@ -1,5 +1,5 @@
 [package]
-name = "ya-ya-popup"
+name = "ya-ya-options"
 version.workspace = true
 edition.workspace = true
 resolver = "2"
@@ -15,6 +15,4 @@ console_log = "0.2"
 log = "0.4"
 console_error_panic_hook = "0.1.7"
 wasm-bindgen = { workspace = true }
-wasm-bindgen-futures = { workspace = true }
 leptos = { version = "0.6", features = ["csr"] }
-js-sys = "0.3.72"

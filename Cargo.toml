@@ -1,7 +1,6 @@
 [workspace]
-edition = "2021"
 resolver = "2"
-members = ["wasm/background", "wasm/front", "wasm/popup"]
+members = ["wasm/front", "wasm/options", "wasm/popup"]
 
 [workspace.package]
 version = "0.1.0"
@@ -9,5 +8,6 @@ edition = "2021"
 
 [workspace.dependencies]
 wasm-bindgen = "0.2.84"
+wasm-bindgen-futures = "0.4.45"
 web-sys = { version = "0.3.61", features = ['console'] }
 cfg-if = "1"

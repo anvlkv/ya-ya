@@ -49,8 +49,10 @@ pub fn YaWordPopover(
             <Show
                 when={move ||content.get().is_some()}
                 fallback={move || view! {
-                    <h3>{move || word.get().mark.text_content()}</h3>
-                    <Loading/>
+                    <pre>
+                        <h3>{move || word.get().mark.text_content()}</h3>
+                        <Loading/>
+                    </pre>
                 }}
             >
                 <ErrorBoundary fallback=move |errors| view!{
