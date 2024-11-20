@@ -10,6 +10,13 @@ paths:
         function_id: d4e9bhr5t4f10s4lf5qk
         service_account_id: ajem26g1ji06b6fvn3gh
       operationId: translate-word
+  /translate-text:
+    post:
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: d4ehueu6bgdh72u84kfn
+        service_account_id: ajem26g1ji06b6fvn3gh
+      operationId: translate-text
   /success-record:
     post:
       x-yc-apigateway-integration:

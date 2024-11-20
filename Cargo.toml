@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["wasm/front", "wasm/options", "wasm/popup"]
+members = [ "wasm/common","wasm/front", "wasm/options", "wasm/popup"]
 
 [workspace.package]
 version = "0.1.0"
@@ -9,5 +9,19 @@ edition = "2021"
 [workspace.dependencies]
 wasm-bindgen = "0.2.84"
 wasm-bindgen-futures = "0.4.45"
-web-sys = { version = "0.3.61", features = ['console'] }
+web-sys = { version = "0.3.61" }
 cfg-if = "1"
+leptos = { version = "0.6" }
+console_log = "0.2"
+log = "0.4"
+console_error_panic_hook = "0.1.7"
+leptos-use = { version = "0.13.8" }
+js-sys = "0.3.72"
+uuid = { version = "1.11.0" }
+markdown = "1.0.0-alpha.21"
+reqwest = { version = "0.12.9" }
+json = "0.12.4"
+serde = "1.0.215"
+serde_json = "1.0.133"
+thiserror = "2.0.3"
+dotenv = "0.15.0"

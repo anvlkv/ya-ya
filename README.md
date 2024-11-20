@@ -50,6 +50,14 @@ yc serverless function version create --function-name=translate-word \
   --environment FN_MODEL_FOLDER_ID=b1gompirgbut357v15gm \
   --environment YDB_ENDPOINT=grpcs://ydb.serverless.yandexcloud.net:2135 \
   --environment YDB_DATABASE=/ru-central1/b1gtihve0dnl8to5iv7k/etnngbkfqn4uqfcftp6v
+yc serverless function version create --function-name=translate-text \
+  --source-path functions.zip \
+  --runtime python312 \
+  --entrypoint text.handler \
+  --service-account-id=ajem26g1ji06b6fvn3gh \
+  --environment FN_MODEL_FOLDER_ID=b1gompirgbut357v15gm \
+  --environment YDB_ENDPOINT=grpcs://ydb.serverless.yandexcloud.net:2135 \
+  --environment YDB_DATABASE=/ru-central1/b1gtihve0dnl8to5iv7k/etnngbkfqn4uqfcftp6v
 yc serverless function version create --function-name=success-record \
   --source-path functions.zip \
   --runtime python312 \

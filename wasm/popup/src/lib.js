@@ -6,5 +6,9 @@ export async function sendMessage(message) {
     currentWindow: true,
   });
 
-  return await rtm.tabs.sendMessage(activeTab.id, message);
+  const response = await rtm.tabs.sendMessage(activeTab.id, message);
+
+  console.log(response);
+
+  return response
 }

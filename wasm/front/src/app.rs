@@ -1,6 +1,3 @@
-mod annotation;
-mod error;
-mod loading;
 mod mark;
 mod popover;
 mod util;
@@ -9,7 +6,7 @@ mod ya_word;
 
 use std::collections::HashMap;
 
-use annotation::{annotate_word, success_record};
+use common::annotation::{annotate_word, success_record};
 use leptos::*;
 use leptos_use::{
     signal_debounced, use_document, use_event_listener, use_raf_fn, use_window,
@@ -61,7 +58,7 @@ pub fn App() -> impl IntoView {
         },
     );
 
-    let success_record_action = create_action(|(id, result): &(u32, bool)| {
+    let success_record_action = create_action(|(id, result): &(usize, bool)| {
         let id = *id;
         let result = *result;
         async move {

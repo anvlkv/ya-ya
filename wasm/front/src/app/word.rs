@@ -1,14 +1,15 @@
 use std::str::FromStr;
 
-use super::{
-    annotation::Annotation, error::YaYaError, util::*, BRAND_COLOR, MARK_ROOT_ATTRIBUTE,
-    PENDING_ATTRIBUTE_WORD, TRIGGER_ANIMATED_TIMER, TRIGGER_ATTRIBUTE_WORD,
-};
-
+use common::{annotation::Annotation, error::YaYaError};
 use leptos::document;
 use uuid::Uuid;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{Element, Node};
+
+use super::{
+    util::*, BRAND_COLOR, MARK_ROOT_ATTRIBUTE, PENDING_ATTRIBUTE_WORD, TRIGGER_ANIMATED_TIMER,
+    TRIGGER_ATTRIBUTE_WORD,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct WordMark {

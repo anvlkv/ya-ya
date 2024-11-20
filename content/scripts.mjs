@@ -11,10 +11,11 @@ export async function sendMessage(message) {
   return await rtm.runtime.sendMessage(message);
 }
 
-rtm.runtime.onMessage.addListener((req, sensder, sendResponse) => {
-  if (req.action === "getSelectedText") {
+rtm.runtime.onMessage.addListener((message, sensder, sendResponse) => {
+  if (message.action === "getSelectedText") {
     const selectedText = window.getSelection().toString();
-    sendResponse({ selectedText });
+    const origin = window.location.origin;
+
+    sendResponse({ selectedText, origin });
   }
-  return true;
 });

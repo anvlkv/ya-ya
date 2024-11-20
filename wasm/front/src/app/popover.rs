@@ -87,10 +87,11 @@ pub fn YaYaPopover(
     } = use_window_size();
 
     let space_above = move || mark_y.get() - scroll_y.get();
-    let space_below =
-        move || win_height.get() - (mark_y.get() + mark_height.get() - scroll_y.get());
     let space_left_before = move || before_x.get() - scroll_x.get();
-    let space_right_after = move || win_width.get() - (after_x.get() - scroll_x.get());
+
+    let space_below =
+        move || win_height.get() - (mark_y.get() + mark_height.get()) + scroll_y.get();
+    let space_right_after = move || win_width.get() - (after_x.get() + scroll_x.get());
 
     let side = create_memo(move |_| {
         let space_above = space_above();

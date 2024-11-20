@@ -1,12 +1,9 @@
+use common::{annotation::Annotation, error::YaYaError};
 use leptos::*;
 use uuid::Uuid;
 use wasm_bindgen::JsValue;
 
-use super::{
-    annotation::Annotation,
-    error::YaYaError,
-    word::{WordMark, WordPermanentTrigger},
-};
+use super::word::{WordMark, WordPermanentTrigger};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PermanentTrigger {

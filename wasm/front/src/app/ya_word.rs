@@ -1,9 +1,8 @@
+use common::error::{ErrorView, YaYaError};
+use common::loading::Loading;
 use leptos::*;
 use uuid::Uuid;
 
-use crate::app::error::{ErrorView, YaYaError};
-
-use super::loading::Loading;
 use super::popover::YaYaPopover;
 use super::word::WordPermanentTrigger;
 
@@ -49,7 +48,7 @@ pub fn YaWordPopover(
             <Show
                 when={move ||content.get().is_some()}
                 fallback={move || view! {
-                    <pre>
+                    <pre class="ya-ya-pre">
                         <h3>{move || word.get().mark.text_content()}</h3>
                         <Loading/>
                     </pre>
@@ -64,7 +63,7 @@ pub fn YaWordPopover(
                         let content = content.get().ok_or(YaYaError::IntegrationError)??;
                         let id = word.get().id;
                         Result::<View, YaYaError>::Ok(view!{
-                            <pre style:display="contents"  inner_html=content />
+                            <pre class="ya-ya-pre" inner_html=content />
                             <div class="ya-ya-water-mark">
                                 <hr/>
                                 <p>Ответ создан языковой моделью и может содержать ошибки.</p>

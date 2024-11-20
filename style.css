@@ -1,12 +1,23 @@
 body {
     margin: 0;
+    display: contents;
+}
+
+.ya-ya-action {
+    width: 103%;
+    box-sizing: border-box;
+}
+
+.ya-ya-action > h1 {
+    margin-top: 0;
+    margin-bottom: 0.5em;
 }
 
 #ya-ya-extension-root,
 .ya-ya-action {
     font-family: Helvetica, Arial, sans-serif;
     font-size: 16.5pt;
-    line-height: 1.5em;
+    line-height: 1.5;
 }
 
 .ya-ya-action,
@@ -39,7 +50,7 @@ body {
 .ya-ya-popover-inner {
     position: relative;
 }
-.ya-ya-popover .ya-ya-content {
+.ya-ya-content {
     overflow: auto;
     display: flex;
     flex-direction: column;
@@ -308,4 +319,16 @@ body {
 .ya-ya-anchor {
     height: 1em;
     display: inline-block;
+}
+
+.ya-ya-pre {
+    display: contents;
+}
+
+.ya-ya-text-original {
+    font-size: smaller;
+    background-color: rgba(50, 50, 50, 0.3);
+    border-left: 4px solid rgba(50, 50, 50, 0.5);
+    padding: 0.25em;
+    margin: 0;
 }

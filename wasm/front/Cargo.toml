@@ -27,21 +27,19 @@ web-sys = { workspace = true, features = [
     "NodeIterator",
 ] }
 wasm-bindgen = { workspace = true }
-leptos = { version = "0.6", features = ["csr"] }
-console_log = "0.2"
-log = "0.4"
-console_error_panic_hook = "0.1.7"
-leptos-use = { version = "0.13.8" }
-js-sys = "0.3.72"
-uuid = { version = "1.11.0", features = ["v4"] }
-markdown = "1.0.0-alpha.21"
+leptos = { workspace = true, features = ["csr"] }
+console_log = { workspace = true }
+log = { workspace = true }
+console_error_panic_hook = { workspace = true }
+leptos-use = { workspace = true }
+js-sys = { workspace = true }
+uuid = { workspace = true, features = ["v4"] }
+markdown = { workspace = true }
 wasm-bindgen-futures = { workspace = true }
 cfg-if = { workspace = true }
-reqwest = { version = "0.12.9", features = ["json"] }
-json = "0.12.4"
-serde = "1.0.215"
-serde_json = "1.0.133"
-thiserror = "2.0.3"
-
-[build-dependencies]
-dotenv = "0.15.0"
+reqwest = { workspace = true, features = ["json"] }
+json = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+common = { path = "../common" }
