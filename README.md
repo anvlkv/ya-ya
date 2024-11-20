@@ -35,6 +35,10 @@ cargo watch \
 ### Deploy
 
 ```
+yc serverless api-gateway create --name=ya-ya-api-gw --spec=spec.yaml
+```
+
+```
 yc serverless api-gateway update --name=ya-ya-api-gw --spec=spec.yaml
 ```
 
