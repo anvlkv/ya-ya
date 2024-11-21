@@ -28,3 +28,6 @@ extension-env.d.ts
 target
 
 *.zip
+
+.mypy_cache/
+.ropeproject/

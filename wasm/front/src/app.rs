@@ -20,7 +20,7 @@ use ya_word::YaWordPopover;
 
 use super::MOUNT;
 
-pub const BEFORE_TRIGGER_TIMER: f64 = 200.0;
+pub const BEFORE_TRIGGER_TIMER: f64 = 60.0;
 pub const TRIGGER_ANIMATED_TIMER: f64 = 1800.0;
 pub const MARK_ROOT_ATTRIBUTE: &str = "data-ya-ya-mark-root";
 pub const TRIGGER_ATTRIBUTE_WORD: &str = "data-ya-ya-trigger-word";

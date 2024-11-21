@@ -45,6 +45,8 @@ impl CalloutSide {
     }
 }
 
+const PADDING_MULTIPLIER: f64 = 3.0;
+
 #[component]
 pub fn YaYaPopover(
     #[prop(attrs)] attrs: Vec<(&'static str, Attribute)>,
@@ -90,8 +92,10 @@ pub fn YaYaPopover(
     let space_left_before = move || before_x.get() - scroll_x.get();
 
     let space_below =
-        move || win_height.get() - (mark_y.get() + mark_height.get()) + scroll_y.get();
-    let space_right_after = move || win_width.get() - (after_x.get() + scroll_x.get());
+        move || win_height.get() - (mark_y.get() + mark_height.get()) - scroll_y.get();
+    let space_right_after = move || {
+        win_width.get() - (after_x.get() + after_el.get().client_width() as f64) - scroll_x.get()
+    };
 
     let side = create_memo(move |_| {
         let space_above = space_above();
@@ -123,18 +127,6 @@ pub fn YaYaPopover(
             (false, true, false, _) => CalloutSide::Left,
         };
 
-        log::debug!(
-            r#"
-side: {side:?}
-space_above: {space_above}
-space_below: {space_below}
-space_right_after: {space_right_after}
-space_left_before: {space_left_before}
-win_width: {win_width}
-win_height: {win_height}
-            "#
-        );
-
         side
     });
 
@@ -147,24 +139,25 @@ win_height: {win_height}
             .and_then(|s| s.trim_end_matches("px").parse::<f64>().ok())
             .unwrap_or_default();
 
-        log::debug!("padding: {value}");
-
         value
     };
 
     let content_max_width = move || {
         let space_right_after = space_right_after();
         let space_left_before = space_left_before();
+        let win_width = win_width.get();
         let side = side.get();
         let padding = padding();
 
         match side {
-            CalloutSide::Top | CalloutSide::Bottom => "auto".to_string(),
+            CalloutSide::Top | CalloutSide::Bottom => {
+                format!("{}px", win_width - padding * PADDING_MULTIPLIER)
+            }
             CalloutSide::TopLeft | CalloutSide::BottomLeft | CalloutSide::Left => {
-                format!("{}px", space_right_after - padding * 3.0)
+                format!("{}px", space_right_after - padding * PADDING_MULTIPLIER)
             }
             CalloutSide::TopRight | CalloutSide::BottomRight | CalloutSide::Right => {
-                format!("{}px", space_left_before - padding * 3.0)
+                format!("{}px", space_left_before - padding * PADDING_MULTIPLIER)
             }
         }
     };
@@ -172,16 +165,19 @@ win_height: {win_height}
     let content_max_height = move || {
         let space_above = space_above();
         let space_below = space_below();
+        let win_height = win_height.get();
         let side = side.get();
         let padding = padding();
 
         match side {
-            CalloutSide::Left | CalloutSide::Right => "auto".to_string(),
+            CalloutSide::Left | CalloutSide::Right => {
+                format!("{}px", win_height - padding * PADDING_MULTIPLIER)
+            }
             CalloutSide::Top | CalloutSide::TopLeft | CalloutSide::TopRight => {
-                format!("{}px", space_below - padding * 3.0)
+                format!("{}px", space_below - padding * PADDING_MULTIPLIER)
             }
             CalloutSide::Bottom | CalloutSide::BottomLeft | CalloutSide::BottomRight => {
-                format!("{}px", space_above - padding * 3.0)
+                format!("{}px", space_above - padding * PADDING_MULTIPLIER)
             }
         }
     };
