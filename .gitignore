@@ -31,3 +31,5 @@ target
 
 .mypy_cache/
 .ropeproject/
+
+.env

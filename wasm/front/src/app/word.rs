@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use common::{annotation::Annotation, error::YaYaError};
 use leptos::document;
+use unicode_segmentation::UnicodeSegmentation;
 use uuid::Uuid;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{Element, Node};
@@ -302,7 +303,7 @@ impl WordPermanentTrigger {
             if let Some(parent_text) = element.text_content() {
                 let parent_text_without_spaces: String = parent_text.split_whitespace().collect();
                 if parent_text_without_spaces.contains(&word) {
-                    let words: Vec<&str> = parent_text.split_whitespace().collect();
+                    let words: Vec<&str> = parent_text.unicode_words().collect();
                     if let Some(word_pos) = words.iter().position(|&w| w == word) {
                         let start = word_pos.saturating_sub(3);
                         let end = (word_pos + 4).min(words.len());
